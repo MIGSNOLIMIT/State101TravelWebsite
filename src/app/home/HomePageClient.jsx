@@ -25,14 +25,14 @@ const staticServicesData = {
       title: "Canada",
       description:
         "Assistance for Canada visa applications, including tourist, student, and work visas. Expert guidance and document review.",
-      iconUrl: "/icons/Canada_Flag_logo.png",
+      iconUrl: "/images/Canada_Flag_logo.png",
       link: "/services/canada",
     },
     {
       title: "United States",
       description:
         "Support for U.S. visa applications, including B1/B2, student, and work visas. Professional advice and interview preparation.",
-      iconUrl: "/icons/US_Flag_logo.png",
+      iconUrl: "/images/US_Flag_logo.png",
       link: "/services/us",
     },
   ],

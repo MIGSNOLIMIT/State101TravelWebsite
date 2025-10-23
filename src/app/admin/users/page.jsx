@@ -132,19 +132,19 @@ export default function UsersPage() {
           <React.Fragment>
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-blue-100">
-                  <th className="py-2 px-3 text-left">Name</th>
-                  <th className="py-2 px-3 text-left">Email</th>
-                  <th className="py-2 px-3 text-left">Role</th>
-                  {currentUser?.role === "admin" && <th className="py-2 px-3 text-left">Actions</th>}
+                <tr className="bg-blue-100 dark:bg-gray-800">
+                  <th className="py-2 px-3 text-left text-blue-700 dark:text-white">Name</th>
+                  <th className="py-2 px-3 text-left text-blue-700 dark:text-white">Email</th>
+                  <th className="py-2 px-3 text-left text-blue-700 dark:text-white">Role</th>
+                  {currentUser?.role === "admin" && <th className="py-2 px-3 text-left text-blue-700 dark:text-white">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} className="border-b">
-                    <td className="py-2 px-3">{user.name}</td>
-                    <td className="py-2 px-3">{user.email}</td>
-                    <td className="py-2 px-3">{user.role}</td>
+                  <tr key={user.id} className="border-b bg-white dark:bg-gray-900">
+                    <td className="py-2 px-3 text-green-700 dark:text-green-400 font-semibold">{user.name}</td>
+                    <td className="py-2 px-3 text-green-700 dark:text-green-400 font-semibold">{user.email}</td>
+                    <td className="py-2 px-3 text-green-700 dark:text-green-400 font-semibold">{user.role}</td>
                     {currentUser?.role === "admin" ? (
                       <td className="py-2 px-3">
                         <button className="text-blue-600 font-bold mr-2" onClick={() => handleEditClick(user)} disabled={user.role === "admin" && user.id !== currentUser.id}>

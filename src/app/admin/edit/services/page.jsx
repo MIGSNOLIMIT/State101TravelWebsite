@@ -68,7 +68,7 @@ export default function EditServicesPage() {
               type="text"
               value={page.heroTitle || ""}
               onChange={e => handleChange("heroTitle", e.target.value)}
-              className="w-full px-4 py-2 border rounded mb-3"
+              className="w-full px-4 py-2 border rounded mb-3 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Hero Title"
             />
             <label className="block mb-1 font-medium">Hero Description</label>
@@ -76,7 +76,7 @@ export default function EditServicesPage() {
               type="text"
               value={page.heroDesc || ""}
               onChange={e => handleChange("heroDesc", e.target.value)}
-              className="w-full px-4 py-2 border rounded"
+              className="w-full px-4 py-2 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Hero Description"
             />
           </section>

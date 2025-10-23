@@ -110,13 +110,13 @@ export default function EditTermsOfService() {
         <h1 className="text-2xl font-bold text-blue-700 mb-6 text-center">Edit Terms of Service & Accreditations</h1>
         <form onSubmit={handleSave} className="space-y-8">
           <section>
-            <label className="block mb-1 font-medium">Heading</label>
+            <label className="block mb-1 font-medium text-blue-700 dark:text-blue-400">Heading</label>
             <div className="font-bold text-xl mb-4">Terms of Service</div>
-            <label className="block mb-1 font-medium">Content</label>
+            <label className="block mb-1 font-medium text-blue-700 dark:text-blue-400">Content</label>
             <textarea
               value={terms.content || ""}
               onChange={e => handleTermsChange("content", e.target.value)}
-              className="w-full px-4 py-2 border rounded min-h-[180px]"
+              className="w-full px-4 py-2 border rounded min-h-[180px] bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Enter Terms of Service content here"
             />
           </section>
@@ -124,14 +124,14 @@ export default function EditTermsOfService() {
             <h2 className="text-xl font-bold mb-4 text-blue-600">Accreditations</h2>
             {[0, 1, 2].map((idx) => (
               <div key={idx} className="mb-6">
-                <label className="block mb-1 font-medium">Logo {idx + 1} URL</label>
+                <label className="block mb-1 font-medium text-blue-700 dark:text-blue-400">Logo {idx + 1} URL</label>
                 <MediaLibraryPicker
                   multiple={false}
                   value={logos[idx] || ""}
                   onChange={url => handleLogoChange(idx, "logo", url)}
                   accept="image/*"
                 />
-                <label className="block mb-1 font-medium">Logo {idx + 1} Name (optional)</label>
+                <label className="block mb-1 font-medium text-blue-700 dark:text-blue-400">Logo {idx + 1} Name (optional)</label>
                 <input
                   type="text"
                   value={names[idx] || ""}

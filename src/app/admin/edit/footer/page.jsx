@@ -80,47 +80,47 @@ export default function EditFooter() {
         </h1>
         <form onSubmit={handleSave} className="space-y-8">
           <section>
-            <label className="block mb-1 font-medium">Phone</label>
+            <label className="block mb-1 font-medium text-blue-700">Phone</label>
             <input
               type="text"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-2 border rounded mb-3"
+              className="w-full px-4 py-2 border rounded mb-3 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Enter phone number"
             />
           </section>
           <section>
-            <label className="block mb-1 font-medium">Email</label>
+            <label className="block mb-1 font-medium text-blue-700">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border rounded mb-3"
+              className="w-full px-4 py-2 border rounded mb-3 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Enter email address"
             />
           </section>
           <section>
-            <label className="block mb-1 font-medium">Address</label>
+            <label className="block mb-1 font-medium text-blue-700">Address</label>
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full px-4 py-2 border rounded mb-3"
+              className="w-full px-4 py-2 border rounded mb-3 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Enter address"
             />
           </section>
           <section>
-            <label className="block mb-1 font-medium">Social Links</label>
+            <label className="block mb-1 font-medium text-blue-700">Social Links</label>
             {socialLinks.map((item, idx) => (
               <div key={item.platform} className="mb-3">
-                <label className="block text-sm font-semibold mb-1">
+                <label className="block text-sm font-semibold mb-1 text-blue-700">
                   {item.platform} URL
                 </label>
                 <input
                   type="text"
                   value={item.url}
                   onChange={(e) => handleSocialChange(idx, e.target.value)}
-                  className="w-full px-4 py-2 border rounded"
+                  className="w-full px-4 py-2 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
                   placeholder={`Paste ${item.platform} URL here`}
                 />
               </div>

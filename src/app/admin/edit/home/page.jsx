@@ -50,23 +50,23 @@ export default function EditHomePage() {
           {/* Hero Section */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">Hero Section</h2>
-            <label className="block mb-1 font-medium">Title</label>
+            <label className="block mb-1 font-medium text-blue-700">Title</label>
             <input
               type="text"
               value={data.heroTitle || ""}
               onChange={e => handleChange("heroTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2"
+              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Hero Title"
             />
-            <label className="block mb-1 font-medium">Description</label>
+            <label className="block mb-1 font-medium text-blue-700">Description</label>
             <input
               type="text"
               value={data.heroDesc || ""}
               onChange={e => handleChange("heroDesc", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2"
+              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Hero Description"
             />
-            <label className="block mb-1 font-medium">Hero Images</label>
+            <label className="block mb-1 font-medium text-blue-700">Hero Images</label>
             <MediaLibraryPicker
               value={data.heroImages}
               onChange={val => handleChange("heroImages", val)}
@@ -77,54 +77,54 @@ export default function EditHomePage() {
           {/* About Section */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">About Section</h2>
-            <label className="block mb-1 font-medium">Title</label>
+            <label className="block mb-1 font-medium text-blue-700">Title</label>
             <input
               type="text"
               value={data.aboutTitle || ""}
               onChange={e => handleChange("aboutTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2"
+              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="About Title"
             />
-            <label className="block mb-1 font-medium">Description</label>
+            <label className="block mb-1 font-medium text-blue-700">Description</label>
             <input
               type="text"
               value={data.aboutDesc || ""}
               onChange={e => handleChange("aboutDesc", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2"
+              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="About Description"
             />
           </section>
           {/* Services Section */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">Services Section</h2>
-            <label className="block mb-1 font-medium">Title</label>
+            <label className="block mb-1 font-medium text-blue-700">Title</label>
             <input
               type="text"
               value={data.servicesTitle || ""}
               onChange={e => handleChange("servicesTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2"
+              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Services Title"
             />
           </section>
           {/* Testimonials Section */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">Testimonials Section</h2>
-            <label className="block mb-1 font-medium">Title</label>
+            <label className="block mb-1 font-medium text-blue-700">Title</label>
             <input
               type="text"
               value={data.testimonialsTitle || ""}
               onChange={e => handleChange("testimonialsTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2"
+              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
               placeholder="Testimonials Title"
             />
-            <label className="block mb-1 font-medium">Images</label>
+            <label className="block mb-1 font-medium text-blue-700">Images</label>
             <MediaLibraryPicker
               value={data.testimonialsImages}
               onChange={val => handleChange("testimonialsImages", val)}
               multiple={true}
               accept="image/*"
             />
-            <label className="block mb-1 font-medium mt-4">Video</label>
+            <label className="block mb-1 font-medium mt-4 text-blue-700">Video</label>
             <MediaLibraryPicker
               value={data.testimonialsVideoUrl}
               onChange={val => handleChange("testimonialsVideoUrl", val)}

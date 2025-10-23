@@ -14,7 +14,7 @@ export default function EditAboutPage() {
   useEffect(() => {
     let didCancel = false;
     async function fetchData() {
-      setLoading(true);
+            setLoading(true);
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
@@ -71,6 +71,13 @@ export default function EditAboutPage() {
                 <Image src={data.heroImageUrl} alt="Hero Banner" width={300} height={120} className="rounded" />
               </div>
             )}
+            <input
+              type="text"
+              value={data.heroImageUrl || ""}
+              onChange={e => handleChange("heroImageUrl", e.target.value)}
+              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
+              placeholder="Hero Banner Image URL"
+            />
           </section>
           <button type="submit" disabled={saving} className="w-full py-3 rounded bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold hover:from-blue-700 hover:to-red-700 transition">
             {saving ? "Saving..." : "Save Changes"}

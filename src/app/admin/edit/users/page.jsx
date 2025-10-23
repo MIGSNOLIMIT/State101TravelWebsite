@@ -83,14 +83,14 @@ export default function AdminUsersPage() {
             type="text"
             value={newUser.name}
             onChange={e => handleNewUserChange("name", e.target.value)}
-            className="w-full px-4 py-2 border rounded"
+            className="w-full px-4 py-2 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
             placeholder="Name (optional)"
           />
           <input
             type="email"
             value={newUser.email}
             onChange={e => handleNewUserChange("email", e.target.value)}
-            className="w-full px-4 py-2 border rounded"
+            className="w-full px-4 py-2 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
             placeholder="Email"
             required
           />
@@ -98,14 +98,14 @@ export default function AdminUsersPage() {
             type="password"
             value={newUser.password}
             onChange={e => handleNewUserChange("password", e.target.value)}
-            className="w-full px-4 py-2 border rounded"
+            className="w-full px-4 py-2 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
             placeholder="Password"
             required
           />
           <select
             value={newUser.role}
             onChange={e => handleNewUserChange("role", e.target.value)}
-            className="w-full px-4 py-2 border rounded"
+            className="w-full px-4 py-2 border rounded bg-white text-gray-900 dark:bg-gray-900 dark:text-white"
           >
             <option value="editor">Editor</option>
             <option value="admin">Admin</option>
@@ -116,24 +116,24 @@ export default function AdminUsersPage() {
         </form>
         <table className="w-full text-left border">
           <thead>
-            <tr>
-              <th className="py-2 px-4 border-b">Name</th>
-              <th className="py-2 px-4 border-b">Email</th>
-              <th className="py-2 px-4 border-b">Role</th>
-              <th className="py-2 px-4 border-b">Actions</th>
+            <tr className="bg-blue-100 dark:bg-gray-800">
+              <th className="py-2 px-4 border-b text-blue-700 dark:text-white">Name</th>
+              <th className="py-2 px-4 border-b text-blue-700 dark:text-white">Email</th>
+              <th className="py-2 px-4 border-b text-blue-700 dark:text-white">Role</th>
+              <th className="py-2 px-4 border-b text-blue-700 dark:text-white">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id}>
-                <td className="py-2 px-4 border-b">{user.name || "-"}</td>
-                <td className="py-2 px-4 border-b">{user.email}</td>
-                <td className="py-2 px-4 border-b">{user.role}
+              <tr key={user.id} className="bg-white dark:bg-gray-900">
+                <td className="py-2 px-4 border-b text-green-700 dark:text-green-400 font-semibold">{user.name || "-"}</td>
+                <td className="py-2 px-4 border-b text-green-700 dark:text-green-400 font-semibold">{user.email}</td>
+                <td className="py-2 px-4 border-b text-green-700 dark:text-green-400 font-semibold">{user.role}
                   {user.role !== "admin" && (
                     <select
                       value={user.role}
                       onChange={e => handleRoleChange(user.id, e.target.value)}
-                      className="ml-2 px-2 py-1 border rounded"
+                      className="ml-2 px-2 py-1 border rounded bg-white text-gray-900 dark:bg-gray-900 dark:text-white"
                     >
                       <option value="editor">Editor</option>
                       <option value="admin">Admin</option>

@@ -146,6 +146,6 @@ prisma/               # Prisma schema and migration scripts
 - Prisma: https://www.prisma.io/docs
 - Supabase: https://supabase.com/docs
 - Tailwind CSS: https://tailwindcss.com/docs
-- Cloudinary: https://cloudinary.com/documentation
+
 
 

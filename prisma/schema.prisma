@@ -1,0 +1,122 @@
+  // TermsOfService model for editable heading and content
+  model TermsOfService {
+    id        Int    @id @default(autoincrement())
+    heading   String?
+    content   String?
+    updatedAt DateTime @updatedAt
+  }
+  // Accreditation model for editable logo URLs
+  model Accreditation {
+    id        Int    @id @default(autoincrement())
+    logoUrl   String
+    name      String?
+    updatedAt DateTime @updatedAt
+  }
+  // AboutPage model for editable hero banner
+  model AboutPage {
+    id           Int      @id @default(autoincrement())
+    heroImageUrl String?
+    updatedAt    DateTime @updatedAt
+  }
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+  // User model for admin authentication
+  model User {
+    id         Int     @id @default(autoincrement())
+    name       String?
+    email      String  @unique
+    password   String
+    resetToken String? // For forgot password functionality
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    role      String   @default("editor") // "admin" or "editor"
+  }
+
+  // Homepage model for editable homepage content
+  model Homepage {
+    id           Int      @id @default(autoincrement())
+    heroTitle    String
+    heroDesc     String
+    heroImages   String[] // Array of image URLs
+    aboutTitle   String?
+    aboutDesc    String?
+    servicesTitle String?
+    testimonialsTitle String?
+  testimonialsImages String[] // Array of testimonial image URLs
+  testimonialsVideoUrl String? // Video URL for testimonials section
+  updatedAt    DateTime @updatedAt
+  }
+
+  // Services model for editable services section
+  model Service {
+    id          Int      @id @default(autoincrement())
+    title       String
+    description String
+    iconUrl     String?
+    country     String   // e.g., "Canada" or "United States"
+    buttonLabel String?
+    buttonLink  String?
+    updatedAt   DateTime @updatedAt
+  }
+
+  // ServicesPage model for hero and section content
+  model ServicesPage {
+    id            Int      @id @default(autoincrement())
+    heroImageUrl  String?
+    heroTitle     String?
+    heroDesc      String?
+    sectionTitle  String?
+    sectionDesc   String?
+    updatedAt     DateTime @updatedAt
+  }
+
+  // WhyChooseCard model for the four cards at the bottom
+  model WhyChooseCard {
+    id          Int      @id @default(autoincrement())
+    title       String
+    description String
+    iconUrl     String?
+    color       String?
+    updatedAt   DateTime @updatedAt
+  }
+  model TopBar {
+    id      Int    @id @default(autoincrement())
+    address String @default("")
+    phone   String @default("")
+    email   String @default("")
+  }
+  model Header {
+    id      Int    @id @default(autoincrement())
+    logoUrl String @default("")
+  }
+  model Footer {
+    id          Int    @id @default(autoincrement())
+  address     String @default("")
+  phone       String @default("")
+  email       String @default("")
+  socialLinks String @default("[]") // JSON array of { platform, url }
+  logoUrl     String @default("")
+  }
+
+
+  // Media model for uploaded images/videos
+  model Media {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    url         String
+    type        String
+    createdAt   DateTime @default(now())
+  }

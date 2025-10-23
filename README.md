@@ -12,84 +12,140 @@ src/app/
 public/                     # Static assets
 
 # State101TravelWebsite
+State101TravelWebsite
 
-Travel visa assistance website built with Next.js, Tailwind CSS, Payload CMS, Cloudinary for media, and Tiptap for rich text editing.
+Travel visa assistance website built with Next.js, Tailwind CSS, Prisma ORM, Supabase (Postgres), Supabase Storage, Cloudinary, and Tiptap rich text editor.
 
-## Requirements
+---
+
+## Developer Setup & Installation
+
+### Requirements
 - Node.js 18+
-- Payload CMS instance (for content management)
+- Git
+- Supabase account (for database and storage)
 - Cloudinary account (for media uploads)
 
-## Quick Start
-1. Clone the repo:
-	```powershell
-	git clone <repo-url>
-	cd State101TravelWebsite
-	```
+### 1. Clone the repository
+```powershell
+git clone <repo-url>
+cd State101TravelWebsite
+```
 
-2. Install dependencies:
-	```powershell
-	npm install
-	```
+### 2. Install dependencies
+```powershell
+npm install
+```
 
-3. Install Tiptap and Prisma dependencies:
-	```powershell
-	npm install @tiptap/core @tiptap/react @tiptap/starter-kit @tiptap/extension-text-style @tiptap/extension-font-family @tiptap/extension-color @tiptap/extension-heading @tiptap/extension-bold @tiptap/extension-underline @prisma/client
-	npx prisma generate
-	npx prisma migrate dev
-	```
+### 3. Set up environment variables
+- Copy `.env.example` to `.env.local` (or create `.env.local`)
+- Fill in:
+	- `DATABASE_URL` (Supabase Postgres connection string, e.g. `postgresql://...@...:5432/postgres?sslmode=require`)
+	- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (from Supabase project settings)
+	- Cloudinary credentials (if using Cloudinary)
+	- SMTP credentials (for password reset)
 
-4. Configure environment variables:
-	```powershell
-	Copy-Item .env.example .env.local
-	# Edit .env.local with your CMS and Cloudinary credentials
-	```
+### 4. Set up the database schema
+```powershell
+npx prisma generate
+npx prisma migrate deploy
+# OR, if you have no migrations:
+npx prisma db push
+```
 
-5. Run the dev server:
-	```powershell
-	npm run dev
-	```
+### 5. (Optional) Migrate existing data
+- Use pgAdmin, TablePlus, DBeaver, or a Prisma script to copy data from your local DB to Supabase.
 
-6. Start your Payload CMS backend and ensure it matches the frontend config.
+### 6. Run the development server
+```powershell
+npm run dev
+```
+
+### 7. Build and run for production
+```powershell
+npm run build
+npm start
+```
+
+### 8. Deployment
+- Recommended: Deploy to Vercel, Netlify, or Render (free tiers available)
+- Set all environment variables in the hosting dashboard
+- Connect your GitHub repo and follow platform instructions
+
+---
 
 ## Environment Variables
-- `NEXT_PUBLIC_CMS_URL`: Base URL of your Payload CMS (e.g., http://localhost:3001)
-- `PREVIEW_SECRET`: Secret string for preview mode
-- Cloudinary credentials (as required by your backend)
+- `DATABASE_URL`: Supabase Postgres connection string
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase project settings
+- `JWT_SECRET`: For authentication
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`: For password reset emails
+- Cloudinary credentials (if using Cloudinary)
 
-## Media Library
-- Media uploads are handled via Cloudinary.
-- Use the Media Library picker to select/upload images and videos.
-- For carousels (e.g., homepage hero), select multiple images.
-
-## Rich Text Editor
-- Uses Tiptap with extensions for bold, underline, font family, font size, color, and headings.
-- If you see errors about missing mark types, ensure all Tiptap extensions are installed and added to the editor config.
-
-## Troubleshooting
-- **Nested <form> error:** Do not nest <form> elements. See `MediaLibraryPicker.jsx` for correct usage.
-- **Tiptap errors:** Install all required extensions and check your editor config.
-- **Images not loading:** Add your image host to `images.remotePatterns` in `next.config.mjs`.
+---
 
 ## Project Structure
 ```
 src/app/
-  layout.js
-  page.js
-  api/
-	 preview/route.js
-	 topbar/route.js
-  components/
-  home/
-  services/
-  about/
-  terms-of-service/
-public/
-prisma/
+	layout.js           # Root layout, fetches global header/footer
+	page.js             # Home page
+	api/                # API routes for admin, CMS, media, etc.
+	components/         # Reusable UI components
+	home/               # Homepage components
+	services/           # Services page/components
+	about/              # About page/components
+	terms-of-service/   # Terms of service page/components
+public/               # Static assets (images, icons, videos)
+prisma/               # Prisma schema and migration scripts
 ```
+
+---
+
+## Documentation: What This App Does
+
+**State101TravelWebsite** is a full-featured travel visa assistance platform. It provides:
+- A public-facing website for users to learn about services, view testimonials, and contact the agency.
+- An admin dashboard for editing homepage, footer, header, top bar, services, about page, terms of service, users, and media library.
+- Rich text editing (Tiptap) for content blocks.
+- Media library integration with Supabase Storage and Cloudinary for images/videos.
+- Authentication for admin/editor users, with password reset via email.
+- All content is stored in a Supabase Postgres database and can be managed via the admin UI.
+- Dynamic rendering for all admin/CMS pages to avoid build timeouts.
+
+---
+
+## User Manual / Guide
+
+### For Admins/Editors
+1. **Login:** Go to `/admin/login` and sign in with your credentials.
+2. **Dashboard:** Access all editable sections from the admin dashboard.
+3. **Edit Content:**
+	 - Homepage, About, Services, Terms of Service, Footer, Header, Top Bar: Use the provided forms and rich text editors.
+	 - Media Library: Upload/select images and videos for use in content blocks.
+	 - Users: Add, edit, or remove admin/editor accounts.
+4. **Save Changes:** All edits are live and update the database instantly.
+5. **Password Reset:** Use the forgot password link to reset your password via email.
+
+### For End Users
+1. **Browse Services:** View visa assistance services for Canada and the US.
+2. **Read About Us:** Learn about the agency’s mission, vision, and story.
+3. **View Testimonials:** See successful client stories and media.
+4. **Contact:** Use provided contact info or forms to inquire about services.
+
+---
+
+## Troubleshooting
+- **Build timeouts:** All admin/CMS pages use dynamic rendering. If you see build errors, check for missing `export const dynamic = "force-dynamic";` in page/layout files.
+- **Database errors:** Ensure your Supabase database is running and your `DATABASE_URL` is correct.
+- **Media issues:** Make sure Supabase Storage and/or Cloudinary credentials are set and valid.
+- **Email issues:** Check SMTP credentials in `.env.local`.
+
+---
 
 ## Learn More
 - Next.js: https://nextjs.org/docs
+- Prisma: https://www.prisma.io/docs
+- Supabase: https://supabase.com/docs
 - Tailwind CSS: https://tailwindcss.com/docs
+- Cloudinary: https://cloudinary.com/documentation
 
 

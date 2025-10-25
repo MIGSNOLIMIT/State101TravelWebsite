@@ -24,7 +24,14 @@ export default function EditTermsOfService() {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        const termsRes = await fetch("/api/admin/terms-of-service", { signal: controller.signal });
+          const base =
+            process.env.NEXT_PUBLIC_SITE_URL ||
+            (typeof window !== "undefined"
+              ? window.location.origin
+              : process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}`
+              : "http://localhost:3000");
+          const termsRes = await fetch(`${base}/api/admin/terms-of-service`, { signal: controller.signal });
         clearTimeout(timeout);
         if (!didCancel && termsRes.ok) {
           const termsJson = await termsRes.json();
@@ -86,11 +93,11 @@ export default function EditTermsOfService() {
       ...terms,
       content: tosTextToHtml(terms.content || ""),
     };
-    await fetch("/api/admin/terms-of-service", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(htmlTerms),
-    });
+      await fetch(`${base}/api/admin/terms-of-service`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(htmlTerms),
+      });
     // Save accreditations
     const data = logos.map((logoUrl, i) => ({ logoUrl, name: names[i] }));
     await fetch("/api/admin/accreditations", {

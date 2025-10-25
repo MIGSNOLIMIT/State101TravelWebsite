@@ -3,8 +3,15 @@ export const dynamic = 'force-dynamic';
 
 
 async function fetchTos() {
-  // Use relative path for server-side fetches
-  const res = await fetch('/api/admin/terms-of-service', { cache: 'no-store' });
+  // Use robust base URL logic for fetch
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
+  const res = await fetch(`${base}/api/admin/terms-of-service`, { cache: 'no-store' });
   if (!res.ok) return null;
   return await res.json();
 }

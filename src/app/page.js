@@ -1,13 +1,23 @@
 export const dynamic = "force-dynamic";
 import HomePageClient from "./home/HomePageClient.jsx";
 
+import { prisma } from "@/lib/prisma";
+
 export default async function Home() {
   let cmsData = null;
   try {
-    const res = await fetch("http://localhost:3000/api/admin/homepage", { cache: 'no-store' });
-    cmsData = res.ok ? await res.json() : null;
-  } catch {}
-  // Only pass cmsData, let HomePageClient handle all fallback rendering
+    // Fetch directly from Prisma instead of calling your own API
+  const homepage = await prisma.homepage.findFirst();
+    if (homepage) {
+      cmsData = {
+        heroImages: homepage.heroImages || [],
+        testimonialsImages: homepage.testimonialsImages || [],
+        testimonialsVideoUrl: homepage.testimonialsVideoUrl || "",
+      };
+    }
+  } catch (error) {
+    console.error("❌ Failed to fetch homepage data:", error);
+  }
   return <HomePageClient cmsData={cmsData} />;
 }
 

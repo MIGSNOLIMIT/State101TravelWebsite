@@ -86,17 +86,8 @@ export default function HomePageClient({ cmsData }) {
       }
     : null;
 
-  // Only require hero and testimonials data for dynamic rendering
-  const isValidCms =
-    cmsData &&
-    heroData &&
-    testimonialsData &&
-    heroData.title &&
-    heroData.description &&
-    Array.isArray(heroData.media) && heroData.media.length > 0 &&
-    testimonialsData.title &&
-    (Array.isArray(testimonialsData.images) && testimonialsData.images.length > 0 || testimonialsData.videoUrl);
-  const showStaticFallback = !isValidCms;
+  // Only fallback if cmsData is completely missing
+  const showStaticFallback = !cmsData;
 
   return (
     <main>

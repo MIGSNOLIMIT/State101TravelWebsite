@@ -62,7 +62,12 @@ export default function EditAboutPage() {
             <label className="block mb-1 font-medium">Hero Banner Image</label>
             <MediaLibraryPicker
               value={data.heroImageUrl ? [data.heroImageUrl] : []}
-              onChange={arr => handleChange("heroImageUrl", arr[0] || "")}
+              onChange={arr => {
+                const selected = arr[0] || "";
+                // Prevent logos from being set as Hero Banner
+                if (selected.includes("logo")) return;
+                handleChange("heroImageUrl", selected);
+              }}
               multiple={false}
               accept="image/*"
             />

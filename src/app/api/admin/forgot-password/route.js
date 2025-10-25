@@ -1,10 +1,9 @@
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
-const prisma = new PrismaClient();
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;

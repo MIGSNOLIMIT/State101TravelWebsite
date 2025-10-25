@@ -14,3 +14,24 @@ export async function GET() {
     return NextResponse.json({ address: '', phone: '', email: '' }, { status: 500 });
   }
 }
+
+// POST: Update TopBar info
+export async function POST(req) {
+  try {
+    const { address, phone, email } = await req.json();
+    let topbar = await prisma.topBar.findFirst();
+    if (topbar) {
+      topbar = await prisma.topBar.update({
+        where: { id: topbar.id },
+        data: { address, phone, email },
+      });
+    } else {
+      topbar = await prisma.topBar.create({
+        data: { address, phone, email },
+      });
+    }
+    return NextResponse.json(topbar);
+  } catch (err) {
+    return NextResponse.json({ error: 'Failed to update TopBar.' }, { status: 500 });
+  }
+}

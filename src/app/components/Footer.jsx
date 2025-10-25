@@ -1,11 +1,8 @@
 "use client";
-
 import Image from "next/image";
 import { EnvelopeIcon, PhoneIcon, MapPinIcon } from "@heroicons/react/24/solid";
 import { Facebook, Instagram } from "lucide-react";
 import { FaTiktok } from "react-icons/fa";
-
-
 import { useEffect, useState } from "react";
 
 export default function Footer() {
@@ -20,14 +17,7 @@ export default function Footer() {
   useEffect(() => {
     async function fetchFooter() {
       try {
-          const base =
-            process.env.NEXT_PUBLIC_SITE_URL ||
-            (typeof window !== "undefined"
-              ? window.location.origin
-              : process.env.VERCEL_URL
-              ? `https://${process.env.VERCEL_URL}`
-              : "http://localhost:3000");
-          const res = await fetch(`${base}/api/admin/footer`, { cache: "no-store" });
+        const res = await fetch("/api/footer", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setContact({

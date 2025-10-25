@@ -93,11 +93,18 @@ export default function EditTermsOfService() {
       ...terms,
       content: tosTextToHtml(terms.content || ""),
     };
-      await fetch(`${base}/api/admin/terms-of-service`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(htmlTerms),
-      });
+    const base =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
+    await fetch(`${base}/api/admin/terms-of-service`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(htmlTerms),
+    });
     // Save accreditations
     const data = logos.map((logoUrl, i) => ({ logoUrl, name: names[i] }));
     await fetch("/api/admin/accreditations", {

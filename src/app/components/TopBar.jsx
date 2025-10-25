@@ -1,7 +1,6 @@
 "use client";
-
-
 import { MapPinIcon, PhoneIcon, EnvelopeIcon } from "@heroicons/react/24/solid";
+
 import { useEffect, useState } from "react";
 
 export default function TopBar() {
@@ -10,20 +9,13 @@ export default function TopBar() {
   useEffect(() => {
     async function fetchTopBar() {
       try {
-          const base =
-            process.env.NEXT_PUBLIC_SITE_URL ||
-            (typeof window !== "undefined"
-              ? window.location.origin
-              : process.env.VERCEL_URL
-              ? `https://${process.env.VERCEL_URL}`
-              : "http://localhost:3000");
-          const res = await fetch(`${base}/api/admin/topbar`, { cache: 'no-store' });
+        const res = await fetch("/api/topbar", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setTopBar({
-            address: data.address || "",
-            phone: data.phone || "",
-            email: data.email || "",
+            address: data.address || "2nd Floor, Unit 223, One Oasis Hub B, Ortigas Ave Ext., Pasig City",
+            phone: data.phone || "+63 961 084 2538",
+            email: data.email || "state101ortigasbranch@gmail.com",
           });
         }
       } catch (err) {
@@ -44,7 +36,7 @@ export default function TopBar() {
       {/* Location */}
       <div className="flex items-center gap-2">
         <MapPinIcon className="w-4 h-4 text-gray-300" />
-        <span>{topBar.address || "2nd Floor, Unit 223, One Oasis Hub B, Ortigas Ave Ext., Pasig City"}</span>
+        <span>{topBar.address}</span>
       </div>
 
       {/* Phone Numbers */}
@@ -52,7 +44,7 @@ export default function TopBar() {
         <PhoneIcon className="w-4 h-4 text-gray-300" />
         <span>
           <a href={`tel:${topBar.phone}`} className="hover:underline">
-            {topBar.phone || "+63 961 084 2538"}
+            {topBar.phone}
           </a>
         </span>
       </div>
@@ -64,7 +56,7 @@ export default function TopBar() {
           href={`mailto:${topBar.email}`}
           className="hover:underline"
         >
-          {topBar.email || "state101ortigasbranch@gmail.com"}
+          {topBar.email}
         </a>
       </div>
     </div>

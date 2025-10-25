@@ -18,7 +18,7 @@ export default function EditTopBar() {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch("/api/admin/topbar", { signal: controller.signal });
+        const res = await fetch("/api/topbar", { signal: controller.signal });
         clearTimeout(timeout);
         if (!didCancel && res.ok) {
           const json = await res.json();
@@ -39,7 +39,7 @@ export default function EditTopBar() {
     e.preventDefault();
     setSaving(true);
     setMessage("");
-    const res = await fetch("/api/admin/topbar", {
+    const res = await fetch("/api/topbar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ address, phone, email }),

@@ -38,9 +38,15 @@ export async function GET() {
 export async function POST(req) {
   try {
     const body = await req.json();
-    // Only update homepage fields, ignore incoming services array
-    const homepageFields = { ...body };
-    delete homepageFields.services;
+    // Only allow valid homepage fields
+    const allowedFields = [
+      'heroTitle', 'heroDesc', 'heroImages', 'aboutTitle', 'aboutDesc',
+      'servicesTitle', 'testimonialsTitle', 'testimonialsImages', 'testimonialsVideoUrl'
+    ];
+    const homepageFields = {};
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) homepageFields[key] = body[key];
+    }
     let homepage = await prisma.homepage.findFirst();
     if (!homepage) {
       homepage = await prisma.homepage.create({ data: homepageFields });

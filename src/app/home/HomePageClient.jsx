@@ -100,6 +100,10 @@ export default function HomePageClient({ cmsData }) {
 
   return (
     <main>
+      {/* DEBUG: Show raw cmsData for troubleshooting */}
+      <pre style={{background:'#eef',padding:'1rem',marginBottom:'1rem',overflow:'auto'}}>
+        {JSON.stringify(cmsData, null, 2)}
+      </pre>
       {!showStaticFallback ? (
         <>
           <Hero heroData={heroData} />

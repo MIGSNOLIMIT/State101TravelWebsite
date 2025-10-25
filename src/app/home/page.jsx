@@ -4,31 +4,16 @@ export const dynamic = "force-dynamic";
 import HomePageClient from "./HomePageClient";
 
 export default async function HomePage() {
-  // Fetch homepage data directly from Prisma
   let cmsData = null;
   try {
-    const { prisma } = await import('@/lib/prisma');
-    let homepage = await prisma.homepage.findFirst();
-    if (!homepage) {
-      homepage = await prisma.homepage.create({
-        data: {
-          heroTitle: "Trusted Visa Experts since 2017 - Your Path to the U.S. and Canada",
-          heroDesc: "Expert in Visa Assistance Canada and America Immigration Consultancy Specialist",
-          heroImages: [],
-          aboutTitle: "Who we are?",
-          aboutDesc: "Our Mission: To provide reliable and transparent assistance...\nOur Vision: To be the most trusted partner...",
-          servicesTitle: "Our Services",
-          testimonialsTitle: "Our successful clients",
-          testimonialsImages: [],
-          testimonialsVideoUrl: "",
-        },
-      });
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    const res = await fetch(`${baseUrl}/api/admin/homepage`, { cache: "no-store" });
+    if (res.ok) {
+      cmsData = await res.json();
     }
-    const services = await prisma.service.findMany();
-    cmsData = { ...homepage, services };
-  } catch (err) {
-    console.error('Error fetching homepage data from Prisma:', err);
-    cmsData = null;
+  } catch (error) {
+    console.error("❌ Failed to fetch CMS data:", error);
   }
   return <HomePageClient cmsData={cmsData} />;
 }

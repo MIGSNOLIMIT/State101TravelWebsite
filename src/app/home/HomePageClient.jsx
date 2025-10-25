@@ -4,9 +4,13 @@ import ServicesPreview from "./ServicesPreview";
 import Testimonials from "./Testimonials";
 
 const staticHeroData = {
-  title: "Trusted Visa Experts since 2017- Your Path to the U.S. and Canada",
+  title: "Trusted Visa Experts since 2017 - Your Path to the U.S. and Canada",
   description: "Expert in Visa Assistance Canada and America Immigration Consultancy Specialist",
-  
+  media: [
+    { url: "/images/hero.jpg" },
+    { url: "/images/hero1.jpg" },
+    { url: "/images/hero3.jpg" },
+  ],
 };
 const staticAboutData = {
   heading: "Who we are?",
@@ -48,69 +52,33 @@ const staticTestimonialsData = {
 };
 
 export default function HomePageClient({ cmsData }) {
-  // Parse about section
-  const aboutData = cmsData
-    ? {
-        heading: cmsData.aboutTitle,
-        image: cmsData.heroImages?.[0] ? { url: cmsData.heroImages[0] } : null,
-        missionTitle: 'Mission',
-        missionDescription: cmsData.aboutDesc?.split('Our Mission:')[1]?.split('Our Vision:')[0]?.trim() || '',
-        visionTitle: 'Vision',
-        visionDescription: cmsData.aboutDesc?.split('Our Vision:')[1]?.trim() || '',
-      }
-    : null;
+  // Merge CMS images/videos with static text
+  const heroData = {
+    ...staticHeroData,
+    media:
+      cmsData?.heroImages?.length > 0
+        ? cmsData.heroImages.map((url) => ({ url }))
+        : staticHeroData.media,
+  };
 
-  // Parse services section
-  const servicesData = cmsData
-    ? {
-        title: cmsData.servicesTitle,
-        services: cmsData.services || [],
-      }
-    : null;
-
-  // Parse testimonials section
-  const testimonialsData = cmsData
-    ? {
-        title: cmsData.testimonialsTitle,
-        images: cmsData.testimonialsImages || [],
-        videoUrl: cmsData.testimonialsVideoUrl || '',
-      }
-    : null;
-
-  // Parse hero section
-  const heroData = cmsData
-    ? {
-        title: cmsData.heroTitle,
-        description: cmsData.heroDesc,
-        media: (cmsData.heroImages || []).map((url) => ({ url })),
-      }
-    : null;
-
-  // Only fallback if cmsData is completely missing
-  const showStaticFallback = !cmsData;
+  const aboutData = staticAboutData;
+  const servicesData = staticServicesData;
+  const testimonialsData = {
+    ...staticTestimonialsData,
+    images:
+      cmsData?.testimonialsImages?.length > 0
+        ? cmsData.testimonialsImages
+        : staticTestimonialsData.images,
+    videoUrl:
+      cmsData?.testimonialsVideoUrl || staticTestimonialsData.videoUrl,
+  };
 
   return (
     <main>
-      {/* DEBUG: Show raw cmsData for troubleshooting */}
-      <pre style={{background:'#eef',padding:'1rem',marginBottom:'1rem',overflow:'auto'}}>
-        {JSON.stringify(cmsData, null, 2)}
-      </pre>
-      {!showStaticFallback ? (
-        <>
-          <Hero heroData={heroData} />
-          <AboutPreview aboutData={aboutData} />
-          <ServicesPreview servicesData={servicesData} />
-          <Testimonials testimonialsData={testimonialsData} />
-        </>
-      ) : (
-        <div>
-          <div style={{background:'#ffe',padding:'1rem',textAlign:'center',fontWeight:'bold',color:'#d00'}}>Static homepage fallback: CMS not available or incomplete</div>
-          <Hero heroData={staticHeroData} />
-          <AboutPreview aboutData={staticAboutData} />
-          <ServicesPreview servicesData={staticServicesData} />
-          <Testimonials testimonialsData={staticTestimonialsData} />
-        </div>
-      )}
+      <Hero heroData={heroData} />
+      <AboutPreview aboutData={aboutData} />
+      <ServicesPreview servicesData={servicesData} />
+      <Testimonials testimonialsData={testimonialsData} />
     </main>
   );
 }

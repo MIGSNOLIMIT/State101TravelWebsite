@@ -1,65 +1,67 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
-
-// GET: Fetch homepage content
+// GET: Fetch only image/video CMS fields
 export async function GET() {
   try {
-    let homepage = await prisma.homepage.findFirst();
+    let homepage = await prisma.homepage.findFirst({
+      select: {
+        id: true,
+        heroImages: true,
+        testimonialsImages: true,
+        testimonialsVideoUrl: true,
+        updatedAt: true,
+      },
+    });
+
     if (!homepage) {
-      // Create default homepage if not exists
       homepage = await prisma.homepage.create({
         data: {
-          heroTitle: "Trusted Visa Experts since 2017 - Your Path to the U.S. and Canada",
-          heroDesc: "Expert in Visa Assistance Canada and America Immigration Consultancy Specialist",
           heroImages: [],
-          aboutTitle: "Who we are?",
-          aboutDesc: "Our Mission: To provide reliable and transparent assistance...\nOur Vision: To be the most trusted partner...",
-          servicesTitle: "Our Services",
-          testimonialsTitle: "Our successful clients",
           testimonialsImages: [],
-          testimonialsVideoUrl: "", // Default empty video URL
+          testimonialsVideoUrl: '',
+        },
+        select: {
+          id: true,
+          heroImages: true,
+          testimonialsImages: true,
+          testimonialsVideoUrl: true,
+          updatedAt: true,
         },
       });
     }
-    // Fetch all services from Service table
-    const services = await prisma.service.findMany();
-    // Attach services array to homepage response
-    return NextResponse.json({
-      ...homepage,
-      services,
-    });
+
+    return NextResponse.json(homepage);
   } catch (err) {
+    console.error('❌ Error fetching homepage CMS:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 
-// POST: Update homepage content
+// POST: Update image/video CMS fields
 export async function POST(req) {
   try {
     const body = await req.json();
-    // Only allow valid homepage fields
-    const allowedFields = [
-      'heroTitle', 'heroDesc', 'heroImages', 'aboutTitle', 'aboutDesc',
-      'servicesTitle', 'testimonialsTitle', 'testimonialsImages', 'testimonialsVideoUrl'
-    ];
-    const homepageFields = {};
-    for (const key of allowedFields) {
-      if (body[key] !== undefined) homepageFields[key] = body[key];
-    }
+
+    const updateData = {
+      heroImages: body.heroImages || [],
+      testimonialsImages: body.testimonialsImages || [],
+      testimonialsVideoUrl: body.testimonialsVideoUrl || '',
+    };
+
     let homepage = await prisma.homepage.findFirst();
     if (!homepage) {
-      homepage = await prisma.homepage.create({ data: homepageFields });
+      homepage = await prisma.homepage.create({ data: updateData });
     } else {
-      homepage = await prisma.homepage.update({ where: { id: homepage.id }, data: homepageFields });
+      homepage = await prisma.homepage.update({
+        where: { id: homepage.id },
+        data: updateData,
+      });
     }
-    // Always return homepage with attached services array
-    const services = await prisma.service.findMany();
-    return NextResponse.json({
-      ...homepage,
-      services,
-    });
+
+    return NextResponse.json(homepage);
   } catch (err) {
+    console.error('❌ Error updating homepage CMS:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

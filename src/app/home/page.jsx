@@ -4,21 +4,20 @@ export const dynamic = "force-dynamic";
 import HomePageClient from "./HomePageClient";
 
 export default async function HomePage() {
-  // Use absolute URL for server-side fetches in production
+  // Use custom NEXT_PUBLIC_SITE_URL for server-side fetches in production
   let cmsData = null;
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
-    const res = await fetch(`${baseUrl}/api/admin/homepage`, { cache: 'no-store' });
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const apiUrl = `${baseUrl}/api/admin/homepage`;
+    const res = await fetch(apiUrl, { cache: 'no-store' });
     if (res.ok) {
       cmsData = await res.json();
       console.log('Fetched CMS data:', JSON.stringify(cmsData));
     } else {
-      console.log('API response not OK:', res.status);
+      console.error('API response not OK:', res.status, apiUrl);
     }
   } catch (err) {
-    console.log('Error fetching CMS data:', err);
+    console.error('Error fetching CMS data:', err);
     cmsData = null;
   }
   return <HomePageClient cmsData={cmsData} />;

@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic';
 
 
 async function fetchTos() {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const res = await fetch(`${base}/api/admin/terms-of-service`, { cache: 'no-store' });
+  // Use relative path for server-side fetches
+  const res = await fetch('/api/admin/terms-of-service', { cache: 'no-store' });
   if (!res.ok) return null;
   return await res.json();
 }

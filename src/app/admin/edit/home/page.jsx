@@ -50,22 +50,6 @@ export default function EditHomePage() {
           {/* Hero Section */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">Hero Section</h2>
-            <label className="block mb-1 font-medium text-blue-700">Title</label>
-            <input
-              type="text"
-              value={data.heroTitle || ""}
-              onChange={e => handleChange("heroTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="Hero Title"
-            />
-            <label className="block mb-1 font-medium text-blue-700">Description</label>
-            <input
-              type="text"
-              value={data.heroDesc || ""}
-              onChange={e => handleChange("heroDesc", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="Hero Description"
-            />
             <label className="block mb-1 font-medium text-blue-700">Hero Images</label>
             <MediaLibraryPicker
               value={data.heroImages}
@@ -74,49 +58,19 @@ export default function EditHomePage() {
               accept="image/*"
             />
           </section>
-          {/* About Section */}
+          {/* About Section (static, not editable) */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">About Section</h2>
-            <label className="block mb-1 font-medium text-blue-700">Title</label>
-            <input
-              type="text"
-              value={data.aboutTitle || ""}
-              onChange={e => handleChange("aboutTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="About Title"
-            />
-            <label className="block mb-1 font-medium text-blue-700">Description</label>
-            <input
-              type="text"
-              value={data.aboutDesc || ""}
-              onChange={e => handleChange("aboutDesc", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="About Description"
-            />
+            <div className="text-gray-500 italic">This section uses static content.</div>
           </section>
-          {/* Services Section */}
+          {/* Services Section (static, not editable) */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">Services Section</h2>
-            <label className="block mb-1 font-medium text-blue-700">Title</label>
-            <input
-              type="text"
-              value={data.servicesTitle || ""}
-              onChange={e => handleChange("servicesTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="Services Title"
-            />
+            <div className="text-gray-500 italic">This section uses static content.</div>
           </section>
           {/* Testimonials Section */}
           <section>
             <h2 className="text-xl font-bold mb-2 text-blue-600">Testimonials Section</h2>
-            <label className="block mb-1 font-medium text-blue-700">Title</label>
-            <input
-              type="text"
-              value={data.testimonialsTitle || ""}
-              onChange={e => handleChange("testimonialsTitle", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="Testimonials Title"
-            />
             <label className="block mb-1 font-medium text-blue-700">Images</label>
             <MediaLibraryPicker
               value={data.testimonialsImages}

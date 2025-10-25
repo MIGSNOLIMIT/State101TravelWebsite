@@ -6,7 +6,7 @@ import Testimonials from "./Testimonials";
 const staticHeroData = {
   title: "Trusted Visa Experts since 2017- Your Path to the U.S. and Canada",
   description: "Expert in Visa Assistance Canada and America Immigration Consultancy Specialist",
-  media: [{ url: "/images/statue-of-liberty.jpg" }],
+  
 };
 const staticAboutData = {
   heading: "Who we are?",

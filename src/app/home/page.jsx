@@ -64,10 +64,10 @@ export default function HomePage() {
       }
     : null;
 
-  // Helper: check if CMS data is valid (has at least hero, about, services, testimonials)
-  const isValidCms = cmsData && heroData && aboutData && servicesData && testimonialsData && Array.isArray(servicesData.services) && servicesData.services.length > 0;
+  // Only require hero and testimonials data to show CMS homepage
+  const isValidCms = cmsData && heroData && testimonialsData && Array.isArray(heroData.media) && heroData.media.length > 0 && Array.isArray(testimonialsData.images) && testimonialsData.images.length > 0;
 
-  // If services array is empty, treat CMS as invalid and show static fallback
+  // Show static fallback only if essential CMS data is missing
   const showStaticFallback = !isValidCms;
 
   return (
@@ -76,7 +76,32 @@ export default function HomePage() {
         <>
           <Hero heroData={heroData} />
           <AboutPreview aboutData={aboutData} />
-          <ServicesPreview servicesData={servicesData} />
+          {/* If servicesData exists, show dynamic; else show static */}
+          {servicesData && Array.isArray(servicesData.services) && servicesData.services.length > 0 ? (
+            <ServicesPreview servicesData={servicesData} />
+          ) : (
+            <ServicesPreview
+              servicesData={{
+                title: "Our Services",
+                services: [
+                  {
+                    title: "Canada",
+                    description:
+                      "Assistance for Canada visa applications, including tourist, student, and work visas. Expert guidance and document review.",
+                    iconUrl: "/icons/Canada_Flag_logo.png",
+                    link: "/services/canada",
+                  },
+                  {
+                    title: "United States",
+                    description:
+                      "Support for U.S. visa applications, including B1/B2, student, and work visas. Professional advice and interview preparation.",
+                    iconUrl: "/icons/US_Flag_logo.png",
+                    link: "/services/us",
+                  },
+                ],
+              }}
+            />
+          )}
           <Testimonials testimonialsData={testimonialsData} />
         </>
       ) : (

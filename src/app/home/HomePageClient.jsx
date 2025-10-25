@@ -68,13 +68,6 @@ export default function HomePageClient({ cmsData }) {
 
   return (
     <main>
-      {/* Debug */}
-      <pre style={{
-        background: "#eef", padding: "1rem", marginBottom: "1rem", overflow: "auto"
-      }}>
-        {JSON.stringify(cmsData, null, 2)}
-      </pre>
-
       <Hero heroData={heroData} />
       <AboutPreview aboutData={staticAboutData} />
       <ServicesPreview servicesData={staticServicesData} />

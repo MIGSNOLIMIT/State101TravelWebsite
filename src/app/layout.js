@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { prisma } from "@/lib/prisma";
 import "./globals.css";
 import TopBar from "./components/TopBar";
 import Header from "./components/Header";
@@ -18,19 +19,13 @@ export const metadata = {
 };
 
 // Fetch global header/footer data from your new CMS API
-async function fetchGlobal(slug) {
-  try {
-    const res = await fetch(`/api/admin/${slug}`);
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
 
 export default async function RootLayout({ children }) {
-  const headerData = await fetchGlobal("header");
-  const footerData = await fetchGlobal("footer");
+  
+
+  // Fetch directly from Prisma
+  const headerData = await prisma.header?.findFirst?.() || null;
+  const footerData = await prisma.footer?.findFirst?.() || null;
 
   return (
     <html lang="en">

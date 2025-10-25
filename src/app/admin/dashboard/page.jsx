@@ -61,14 +61,7 @@ const sections = [
 		color: "bg-blue-600",
 		editUrl: "/admin/users",
 	},
-	{
-		key: "media",
-		title: "Media",
-		description: "Upload, preview, and manage images/videos.",
-		icon: "/icons/Instagram_Icon.png",
-		color: "bg-red-600",
-		editUrl: "/admin/media",
-	},
+	
 ];
 
 export default function AdminDashboard() {

@@ -82,6 +82,11 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept }) {
       setSelected(updated);
       onChange(updated);
     } else {
+      const isValidUrl = typeof file.url === "string" &&
+        (file.url.startsWith("http://") ||
+         file.url.startsWith("https://") ||
+         file.url.startsWith("/"));
+      if (!isValidUrl) return; // Ignore invalid selections
       setSelected(file.url);
       onChange(file.url);
     }

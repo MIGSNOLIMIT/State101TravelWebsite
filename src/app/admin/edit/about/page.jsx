@@ -14,11 +14,14 @@ export default function EditAboutPage() {
   useEffect(() => {
     let didCancel = false;
     async function fetchData() {
-            setLoading(true);
+      setLoading(true);
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch("/api/admin/aboutpage", { signal: controller.signal });
+        const url = process.env.NEXT_PUBLIC_SITE_URL
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/aboutpage`
+          : '/api/aboutpage';
+        const res = await fetch(url, { signal: controller.signal });
         clearTimeout(timeout);
         if (!didCancel && res.ok) {
           const json = await res.json();
@@ -41,7 +44,10 @@ export default function EditAboutPage() {
     e.preventDefault();
     setSaving(true);
     setMessage("");
-    const res = await fetch("/api/admin/aboutpage", {
+    const url = process.env.NEXT_PUBLIC_SITE_URL
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/aboutpage`
+      : '/api/aboutpage';
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -61,11 +67,9 @@ export default function EditAboutPage() {
           <section>
             <label className="block mb-1 font-medium">Hero Banner Image</label>
             <MediaLibraryPicker
-              value={data.heroImageUrl ? [data.heroImageUrl] : []}
-              onChange={arr => {
-                const selected = arr[0] || "";
-                // Prevent logos from being set as Hero Banner
-                if (selected.includes("logo")) return;
+              value={data.heroImageUrl || ""}
+              onChange={val => {
+                const selected = Array.isArray(val) ? val[0] || "" : val || "";
                 handleChange("heroImageUrl", selected);
               }}
               multiple={false}
@@ -73,16 +77,14 @@ export default function EditAboutPage() {
             />
             {data.heroImageUrl && (
               <div className="mt-2">
-                <Image src={data.heroImageUrl} alt="Hero Banner" width={300} height={120} className="rounded" />
+                {/* Only render if heroImageUrl is a valid URL */}
+                {/https?:\/\//.test(data.heroImageUrl) ? (
+                  <Image src={data.heroImageUrl} alt="Hero Banner" width={300} height={120} className="rounded" />
+                ) : (
+                  <div className="text-gray-500 italic">No valid image selected</div>
+                )}
               </div>
             )}
-            <input
-              type="text"
-              value={data.heroImageUrl || ""}
-              onChange={e => handleChange("heroImageUrl", e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-2 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="Hero Banner Image URL"
-            />
           </section>
           <button type="submit" disabled={saving} className="w-full py-3 rounded bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold hover:from-blue-700 hover:to-red-700 transition">
             {saving ? "Saving..." : "Save Changes"}

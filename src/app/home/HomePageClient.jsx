@@ -86,8 +86,16 @@ export default function HomePageClient({ cmsData }) {
       }
     : null;
 
-  // Helper: check if CMS data is valid (has main fields: hero, about, testimonials)
-  const isValidCms = cmsData && heroData && aboutData && testimonialsData && heroData.title && heroData.description && Array.isArray(heroData.media) && heroData.media.length > 0 && aboutData.heading && aboutData.missionDescription && aboutData.visionDescription && testimonialsData.title && (Array.isArray(testimonialsData.images) || testimonialsData.videoUrl);
+  // Only require hero and testimonials data for dynamic rendering
+  const isValidCms =
+    cmsData &&
+    heroData &&
+    testimonialsData &&
+    heroData.title &&
+    heroData.description &&
+    Array.isArray(heroData.media) && heroData.media.length > 0 &&
+    testimonialsData.title &&
+    (Array.isArray(testimonialsData.images) && testimonialsData.images.length > 0 || testimonialsData.videoUrl);
   const showStaticFallback = !isValidCms;
 
   return (

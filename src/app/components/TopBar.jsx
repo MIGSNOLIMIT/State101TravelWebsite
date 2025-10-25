@@ -10,8 +10,14 @@ export default function TopBar() {
   useEffect(() => {
     async function fetchTopBar() {
       try {
-        const base = process.env.NEXT_PUBLIC_SITE_URL || '';
-        const res = await fetch(`${base}/api/admin/topbar`, { cache: 'no-store' });
+          const base =
+            process.env.NEXT_PUBLIC_SITE_URL ||
+            (typeof window !== "undefined"
+              ? window.location.origin
+              : process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}`
+              : "http://localhost:3000");
+          const res = await fetch(`${base}/api/admin/topbar`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setTopBar({

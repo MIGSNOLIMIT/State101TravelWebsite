@@ -23,7 +23,7 @@ model Accreditation {
 
 model AboutPage {
   id           Int      @id @default(autoincrement())
-  heroImageUrl String? @default(NULL)
+  heroImageUrl String?  
   updatedAt    DateTime @updatedAt
 }
 

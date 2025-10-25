@@ -104,8 +104,8 @@ export default function ServicesPreview({ servicesData }) {
                   {service.title}
                 </h3>
                 <ul
-                  className="text-left space-y-2 mx-auto mb-6"
-                  style={{ fontFamily: 'Instrument Sans', fontWeight: 500, fontSize: '20px', lineHeight: '24px', color: '#000' }}
+                  className="text-center space-y-4 mx-auto mb-8"
+                  style={{ fontFamily: 'Instrument Sans', fontWeight: 500, fontSize: '28px', lineHeight: '38px', color: '#000' }}
                 >
                   {service.details.map((detail, i) => (
                     <li key={i}>{detail}</li>

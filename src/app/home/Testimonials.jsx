@@ -54,9 +54,9 @@ export default function Testimonials({ testimonialsData }) {
         </div>
 
         {/* Section Title */}
-        <h2 className="text-3xl font-bold mb-10 text-center">
-          {title}
-        </h2>
+          <h2 className="text-3xl font-bold mb-10 text-center text-red-600">
+            {title}
+          </h2>
 
         {/* Responsive Video */}
         {videoUrl ? (

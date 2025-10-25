@@ -33,7 +33,7 @@ export default function Hero({ heroData }) {
       }).filter((s) => typeof s.image === 'string' && s.image.length > 0)
     : [];
 
-  // Advance slide every 5 seconds
+  // Advance image slide every 5 seconds
   useEffect(() => {
     if (slides.length <= 1) return;
     const timer = setTimeout(() => {
@@ -76,19 +76,9 @@ export default function Hero({ heroData }) {
         </div>
       ))}
 
+      {/* Static title and description */}
       <div className="absolute top-1/2 left-10 transform -translate-y-1/2 z-30 max-w-lg">
         <div className="bg-black/50 p-6 rounded-xl">
-      {/* Dots navigation */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-40">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => handleDotClick(index)}
-            className={`w-3 h-3 rounded-full ${index === current ? "bg-white" : "bg-gray-500"}`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
           <h1 className="text-3xl md:text-5xl font-bold text-white">
             {title}
           </h1>

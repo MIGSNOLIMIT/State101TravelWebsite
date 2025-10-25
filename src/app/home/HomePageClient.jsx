@@ -67,7 +67,7 @@ export default function HomePageClient({ cmsData }) {
   };
 
   return (
-    <main>
+    <main className="bg-white" style={{ backgroundColor: 'white' }}>
       <Hero heroData={heroData} />
       <AboutPreview aboutData={staticAboutData} />
       <ServicesPreview servicesData={staticServicesData} />

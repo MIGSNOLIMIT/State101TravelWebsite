@@ -59,7 +59,7 @@ const sections = [
 		description: "Manage admin and editor accounts.",
 		icon: "/icons/Email_Icon.png",
 		color: "bg-blue-600",
-		editUrl: "/admin/users",
+		editUrl: "/admin/edit/users",
 	},
 	
 ];

@@ -6,7 +6,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "editor" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
 
   useEffect(() => {
     async function fetchUsers() {
@@ -34,20 +34,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleRoleChange = async (id, newRole) => {
-    const res = await fetch(`/api/admin/users?id=${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: newRole }),
-    });
-    if (res.ok) {
-      setUsers(users.map(u => u.id === id ? { ...u, role: newRole } : u));
-      setMessage("Role updated.");
-    } else {
-      setMessage("Error updating role.");
-    }
-  };
-
   const handleNewUserChange = (field, value) => {
     setNewUser((prev) => ({ ...prev, [field]: value }));
   };
@@ -63,7 +49,7 @@ export default function AdminUsersPage() {
     if (res.ok) {
       const created = await res.json();
       setUsers([...users, created]);
-      setNewUser({ name: "", email: "", password: "", role: "editor" });
+      setNewUser({ name: "", email: "", password: "" });
       setMessage("User created.");
     } else {
       setMessage("Error creating user.");
@@ -102,14 +88,6 @@ export default function AdminUsersPage() {
             placeholder="Password"
             required
           />
-          <select
-            value={newUser.role}
-            onChange={e => handleNewUserChange("role", e.target.value)}
-            className="w-full px-4 py-2 border rounded bg-white text-gray-900 dark:bg-gray-900 dark:text-white"
-          >
-            <option value="editor">Editor</option>
-            <option value="admin">Admin</option>
-          </select>
           <button type="submit" className="w-full py-3 rounded bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold hover:from-blue-700 hover:to-red-700 transition">
             Add User
           </button>
@@ -128,18 +106,7 @@ export default function AdminUsersPage() {
               <tr key={user.id} className="bg-white dark:bg-gray-900">
                 <td className="py-2 px-4 border-b text-green-700 dark:text-green-400 font-semibold">{user.name || "-"}</td>
                 <td className="py-2 px-4 border-b text-green-700 dark:text-green-400 font-semibold">{user.email}</td>
-                <td className="py-2 px-4 border-b text-green-700 dark:text-green-400 font-semibold">{user.role}
-                  {user.role !== "admin" && (
-                    <select
-                      value={user.role}
-                      onChange={e => handleRoleChange(user.id, e.target.value)}
-                      className="ml-2 px-2 py-1 border rounded bg-white text-gray-900 dark:bg-gray-900 dark:text-white"
-                    >
-                      <option value="editor">Editor</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  )}
-                </td>
+                <td className="py-2 px-4 border-b text-green-700 dark:text-green-400 font-semibold">{user.role}</td>
                 <td className="py-2 px-4 border-b">
                   {user.role !== "admin" && (
                     <button
@@ -158,3 +125,5 @@ export default function AdminUsersPage() {
     </main>
   );
 }
+// ---
+// COMMENT: This file is the correct and only user management page you need. You can safely delete src/app/admin/users/page.jsx as it is a duplicate and contains demo logic that will break your real backend integration.

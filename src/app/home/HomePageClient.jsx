@@ -30,14 +30,14 @@ export default function HomePageClient({ cmsData }) {
         description:
           "Assistance for Canada visa applications, including tourist, student, and work visas. Expert guidance and document review.",
         iconUrl: "/images/Canada_Flag_logo.png",
-        link: "/services/canada",
+        link: "/services",
       },
       {
         title: "United States",
         description:
           "Support for U.S. visa applications, including B1/B2, student, and work visas. Professional advice and interview preparation.",
         iconUrl: "/images/US_Flag_logo.png",
-        link: "/services/us",
+        link: "/services",
       },
     ],
   };

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import Image from "next/image";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
@@ -11,6 +12,7 @@ export default function EditServicesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const router = useRouter();
 
     useEffect(() => {
       async function fetchPage() {
@@ -51,6 +53,14 @@ export default function EditServicesPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-600 via-red-600 to-blue-900 flex flex-col items-center py-12">
+      <div className="absolute top-40 left-6 z-10">
+        <button
+          onClick={() => router.push("/admin/dashboard")}
+          className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+        >
+          ← Back
+        </button>
+      </div>
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-3xl">
         <h1 className="text-2xl font-bold text-blue-700 mb-6 text-center">Edit Services Page</h1>
         <form onSubmit={handleSave} className="space-y-8">
@@ -72,13 +82,21 @@ export default function EditServicesPage() {
               placeholder="Hero Title"
             />
             <label className="block mb-1 font-medium">Hero Description</label>
-            <input
-              type="text"
+            <textarea
               value={page.heroDesc || ""}
-              onChange={e => handleChange("heroDesc", e.target.value)}
-              className="w-full px-4 py-2 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="Hero Description"
+              onChange={e => {
+                const words = e.target.value.trim().split(/\s+/);
+                if (words.length <= 40) {
+                  handleChange("heroDesc", e.target.value);
+                } else {
+                  handleChange("heroDesc", words.slice(0, 40).join(" "));
+                }
+              }}
+              className="w-full px-4 py-2 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300 min-h-[120px] resize-vertical"
+              placeholder="Hero Description (max 40 words)"
+              rows={5}
             />
+            <div className="text-right text-sm text-gray-500">{page.heroDesc ? page.heroDesc.trim().split(/\s+/).length : 0}/40 words</div>
           </section>
           {/* Alternating Sections */}
           {page.sections?.map((section, idx) => (

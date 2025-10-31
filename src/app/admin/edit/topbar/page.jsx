@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function EditTopBar() {
   const [address, setAddress] = useState("");
@@ -10,6 +11,7 @@ export default function EditTopBar() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     let didCancel = false;
@@ -39,6 +41,12 @@ export default function EditTopBar() {
     e.preventDefault();
     setSaving(true);
     setMessage("");
+    // Validation: all fields required
+    if (!address.trim() || !phone.trim() || !email.trim()) {
+      setMessage("All fields are required. Please fill in address, phone, and email.");
+      setSaving(false);
+      return;
+    }
     const res = await fetch("/api/topbar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -91,6 +99,14 @@ export default function EditTopBar() {
           </button>
           {message && <div className="mt-4 text-center text-blue-600">{message}</div>}
         </form>
+      </div>
+      <div className="absolute top-40 left-6 z-10">
+        <button
+          onClick={() => router.push("/admin/dashboard")}
+          className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+        >
+          ← Back
+        </button>
       </div>
     </main>
   );

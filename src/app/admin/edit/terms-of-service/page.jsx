@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -10,6 +11,7 @@ const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), { ss
 const PLACEHOLDER = "/images/placeholder_logo.png";
 
 export default function EditTermsOfService() {
+  const router = useRouter();
   const [terms, setTerms] = useState({ heading: "", content: "" });
   const [logos, setLogos] = useState(["", "", ""]);
   const [names, setNames] = useState(["", "", ""]);
@@ -120,6 +122,14 @@ export default function EditTermsOfService() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-600 via-red-600 to-blue-900 flex flex-col items-center py-12">
+      <div className="absolute top-40 left-6 z-10">
+        <button
+          onClick={() => router.push("/admin/dashboard")}
+          className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+        >
+          ← Back
+        </button>
+      </div>
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-3xl">
         <h1 className="text-2xl font-bold text-blue-700 mb-6 text-center">Edit Terms of Service & Accreditations</h1>
         <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded">

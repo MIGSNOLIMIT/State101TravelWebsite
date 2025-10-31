@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const sections = [
 	{
@@ -66,52 +67,81 @@ const sections = [
 
 export default function AdminDashboard() {
 	const router = useRouter();
-	return (
-		<main className="min-h-screen bg-gradient-to-br from-blue-600 via-red-600 to-blue-900 flex flex-col items-center py-12">
-			<div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-3xl">
-				<div className="flex flex-col items-center mb-8">
-					<Image
-						src="/images/logo.png"
-						alt="State101 Logo"
-						width={80}
-						height={80}
-						className="mb-2"
-					/>
-					<h1 className="text-3xl font-bold text-blue-700 mb-2">
-						Admin Dashboard
-					</h1>
-					<p className="text-gray-600 text-center">
-						Welcome! Select a section below to edit your website content. All
-						changes are live and easy to manage.
-					</p>
-				</div>
-				<div className="grid md:grid-cols-2 gap-8">
-					{sections.map((section) => (
-						<div
-							key={section.key}
-							className={`rounded-xl shadow p-6 flex flex-col items-center ${section.color} text-white`}
-						>
-							<Image
-								src={section.icon}
-								alt={section.title}
-								width={50}
-								height={50}
-								className="mb-3"
-							/>
-							<h2 className="text-xl font-bold mb-2">{section.title}</h2>
-							<p className="mb-4 text-center text-white/90">
-								{section.description}
-							</p>
-							<button
-								className="bg-white text-blue-700 font-bold px-6 py-2 rounded hover:bg-blue-100 transition"
-								onClick={() => router.push(section.editUrl)}
-							>
-								Edit {section.title}
-							</button>
-						</div>
-					))}
-				</div>
-			</div>
-		</main>
-	);
+	const [role, setRole] = useState(null);
+	useEffect(() => {
+		async function fetchRole() {
+			try {
+				const res = await fetch("/api/admin/me");
+				if (res.ok) {
+					const json = await res.json();
+					setRole(json.role);
+				}
+			} catch {}
+		}
+		fetchRole();
+	}, []);
+
+	const filteredSections = role === "admin"
+		? sections
+		: sections.filter(section => section.key !== "users");
+
+	if (role === null) return <div className="p-8 text-center">Loading...</div>;
+
+       return (
+	       <main className="min-h-screen bg-gradient-to-br from-blue-600 via-red-600 to-blue-900 flex flex-col items-center py-12 relative">
+		       {/* Logout Button */}
+		       <div className="absolute top-8 left-6 z-10">
+			       <button
+				       onClick={() => window.location.href = "/admin/login"}
+				       className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+			       >
+				       Logout
+			       </button>
+		       </div>
+		       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-3xl">
+			       <div className="flex flex-col items-center mb-8">
+				       <Image
+					       src="/images/logo.png"
+					       alt="State101 Logo"
+					       width={80}
+					       height={80}
+					       className="mb-2"
+				       />
+				       <h1 className="text-3xl font-bold text-blue-700 mb-2">
+					       Admin Dashboard
+				       </h1>
+				       <p className="text-gray-600 text-center">
+					       Welcome! Select a section below to edit your website content. All
+					       changes are live and easy to manage.
+				       </p>
+			       </div>
+			       <div className="grid md:grid-cols-2 gap-8">
+				       {filteredSections.map((section) => (
+					       <div
+						       key={section.key}
+						       className={`rounded-xl shadow p-6 flex flex-col items-center ${section.color} text-white`}
+					       >
+						       <Image
+							       src={section.icon}
+							       alt={section.title}
+							       width={50}
+							       height={50}
+							       className="mb-3"
+						       />
+						       <h2 className="text-xl font-bold mb-2">{section.title}</h2>
+						       <p className="mb-4 text-center text-white/90">
+							       {section.description}
+						       </p>
+						       <button
+							       className="bg-white text-blue-700 font-bold px-6 py-2 rounded hover:bg-blue-100 transition"
+							       onClick={() => router.push(section.editUrl)}
+						       >
+							       Edit {section.title}
+						       </button>
+					       </div>
+				       ))}
+			       </div>
+		       </div>
+	       </main>
+       );
 }

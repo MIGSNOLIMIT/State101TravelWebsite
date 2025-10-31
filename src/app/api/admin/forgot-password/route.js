@@ -1,4 +1,3 @@
-
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
@@ -28,7 +27,8 @@ export async function POST(req) {
       data: { resetToken: token },
     });
     // Send email with reset link
-    const resetUrl = `http://localhost:3000/admin/reset-password?token=${token}`;
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+    const resetUrl = `${baseUrl}/admin/reset-password?token=${token}`;
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,
       port: SMTP_PORT,

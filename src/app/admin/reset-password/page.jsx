@@ -55,6 +55,14 @@ export default function ResetPassword() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-red-600 to-blue-900">
+      <div className="absolute top-40 left-6 z-10">
+        <button
+          onClick={() => router.push("/admin/dashboard")}
+          className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+        >
+          ← Back
+        </button>
+      </div>
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-blue-700 mb-4 text-center">
           Reset Password

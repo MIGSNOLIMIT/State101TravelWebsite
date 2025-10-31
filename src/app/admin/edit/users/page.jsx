@@ -1,12 +1,16 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "" });
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchUsers() {
@@ -41,6 +45,29 @@ export default function AdminUsersPage() {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setMessage("");
+    // Email validation
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!emailRegex.test(newUser.email)) {
+      setMessage("Please enter a valid email address.");
+      return;
+    }
+    // Email length validation
+    const emailLength = newUser.email.length;
+    if (emailLength < 6) {
+      setMessage("Email address must be at least 6 characters.");
+      return;
+    }
+    if (emailLength > 30) {
+      setMessage("Email address must not exceed 30 characters.");
+      return;
+    }
+    // Common domain typo check
+    const domain = newUser.email.split('@')[1]?.toLowerCase();
+    const typoDomains = ["gmil.com", "gmai.com", "gmaill.com", "gmail.con", "gmail.co", "gmail.om"];
+    if (typoDomains.includes(domain)) {
+      setMessage("Did you mean gmail.com? Please check your email address.");
+      return;
+    }
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -52,7 +79,66 @@ export default function AdminUsersPage() {
       setNewUser({ name: "", email: "", password: "" });
       setMessage("User created.");
     } else {
-      setMessage("Error creating user.");
+      const errorJson = await res.json();
+      if (errorJson?.error === "Email already exists") {
+        setMessage("This Email is already in use.");
+      } else {
+        setMessage("Error creating user.");
+      }
+    }
+  };
+
+  const startEditUser = (user) => {
+    setEditingUser(user);
+    setEditForm({ name: user.name || "", email: user.email });
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    // Email validation
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!emailRegex.test(editForm.email)) {
+      setMessage("Please enter a valid email address.");
+      return;
+    }
+    // Email length validation
+    const emailLengthEdit = editForm.email.length;
+    if (emailLengthEdit < 6) {
+      setMessage("Email address must be at least 6 characters.");
+      return;
+    }
+    if (emailLengthEdit > 30) {
+      setMessage("Email address must not exceed 30 characters.");
+      return;
+    }
+    // Common domain typo check
+    const domainEdit = editForm.email.split('@')[1]?.toLowerCase();
+    const typoDomains = ["gmil.com", "gmai.com", "gmaill.com", "gmail.con", "gmail.co", "gmail.om"];
+    if (typoDomains.includes(domainEdit)) {
+      setMessage("Did you mean gmail.com? Please check your email address.");
+      return;
+    }
+    const res = await fetch(`/api/admin/users?id=${editingUser.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (res.ok) {
+      setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u));
+      setEditingUser(null);
+      setMessage("User updated.");
+    } else {
+      const errorJson = await res.json();
+      if (errorJson?.error === "Email already exists") {
+        setMessage("This Email is already in use.");
+      } else {
+        setMessage("Error updating user.");
+      }
     }
   };
 
@@ -60,6 +146,14 @@ export default function AdminUsersPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-600 via-red-600 to-blue-900 flex flex-col items-center py-12">
+      <div className="absolute top-40 left-6 z-10">
+        <button
+          onClick={() => router.push("/admin/dashboard")}
+          className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+        >
+          ← Back
+        </button>
+      </div>
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl">
         <h1 className="text-2xl font-bold text-blue-700 mb-6 text-center">User Management</h1>
         {message && <div className="mb-4 text-center text-blue-600">{message}</div>}
@@ -116,11 +210,41 @@ export default function AdminUsersPage() {
                       Remove
                     </button>
                   )}
+                  <button
+                    onClick={() => startEditUser(user)}
+                    className="ml-2 px-3 py-1 rounded bg-blue-600 text-white font-bold hover:bg-blue-700"
+                  >
+                    Edit
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {editingUser && (
+          <form onSubmit={handleEditUser} className="mt-8 p-6 bg-blue-50 rounded shadow max-w-md mx-auto">
+            <h2 className="text-lg font-bold mb-4 text-blue-700">Edit User</h2>
+            <input
+              type="text"
+              value={editForm.name}
+              onChange={e => handleEditFormChange("name", e.target.value)}
+              className="w-full px-4 py-2 border rounded mb-3"
+              placeholder="Name (optional)"
+            />
+            <input
+              type="email"
+              value={editForm.email}
+              onChange={e => handleEditFormChange("email", e.target.value)}
+              className="w-full px-4 py-2 border rounded mb-3"
+              placeholder="Email"
+              required
+            />
+            <div className="flex gap-4 mt-4">
+              <button type="submit" className="py-2 px-6 rounded bg-blue-600 text-white font-bold hover:bg-blue-700">Save</button>
+              <button type="button" className="py-2 px-6 rounded bg-gray-400 text-white font-bold hover:bg-gray-500" onClick={() => setEditingUser(null)}>Cancel</button>
+            </div>
+          </form>
+        )}
       </div>
     </main>
   );

@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const SOCIAL_PLATFORMS = ["Facebook", "Instagram", "TikTok"];
 
@@ -17,6 +18,7 @@ export default function EditFooter() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchData() {
@@ -60,6 +62,12 @@ export default function EditFooter() {
     e.preventDefault();
     setSaving(true);
     setMessage("");
+    // Validation: all fields required
+    if (!phone.trim() || !email.trim() || !address.trim() || socialLinks.some(link => !link.url.trim())) {
+      setMessage("All fields are required. Please fill in phone, email, address, and all social links.");
+      setSaving(false);
+      return;
+    }
     const res = await fetch("/api/admin/footer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -139,6 +147,14 @@ export default function EditFooter() {
             </div>
           )}
         </form>
+      </div>
+      <div className="absolute top-40 left-6 z-10">
+        <button
+          onClick={() => router.push("/admin/dashboard")}
+          className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
+        >
+          ← Back
+        </button>
       </div>
     </main>
   );

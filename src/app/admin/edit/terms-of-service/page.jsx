@@ -122,6 +122,15 @@ export default function EditTermsOfService() {
     <main className="min-h-screen bg-gradient-to-br from-blue-600 via-red-600 to-blue-900 flex flex-col items-center py-12">
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-3xl">
         <h1 className="text-2xl font-bold text-blue-700 mb-6 text-center">Edit Terms of Service & Accreditations</h1>
+        <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded">
+          <strong>Formatting Guide:</strong>
+          <ul className="list-disc ml-6 mt-2">
+            <li>Lines starting with <code>1. </code>, <code>2. </code>, etc. become section headers.</li>
+            <li>Lines starting with <code>•</code> or <code>-</code> become bullet points.</li>
+            <li>Other lines are converted to paragraphs with line breaks.</li>
+            <li>Your text will be automatically converted to HTML for display.</li>
+          </ul>
+        </div>
         <form onSubmit={handleSave} className="space-y-8">
           <section>
             <label className="block mb-1 font-medium text-blue-700 dark:text-blue-400">Heading</label>

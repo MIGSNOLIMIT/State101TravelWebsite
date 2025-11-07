@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
-export default function Hero({ heroData }) {
+export default function Hero({ heroData, fit = "cover" }) {
   // Handler for dot navigation
   const handleDotClick = (idx) => {
     setCurrent(idx);
@@ -42,8 +42,13 @@ export default function Hero({ heroData }) {
     return () => clearTimeout(timer);
   }, [current, slides.length]);
 
-  const title = heroData?.title || "Trusted Visa Experts since 2017 - Your Path to the U.S. and Canada";
-  const description = heroData?.description || "Expert in Visa Assistance Canada and America Immigration Consultancy Specialist";
+  // Only use CMS-provided text; no static fallbacks
+  const title = typeof heroData?.title === 'string' && heroData.title.trim() ? heroData.title.trim() : null;
+  const description = typeof heroData?.description === 'string' && heroData.description.trim() ? heroData.description.trim() : null;
+  const fitClass = fit === "contain" ? "object-contain" : "object-cover";
+
+  // Hide hero entirely if there are no CMS slides
+  if (slides.length === 0) return null;
 
   return (
     <section className="relative w-full h-[500px] overflow-hidden">
@@ -61,14 +66,14 @@ export default function Hero({ heroData }) {
               alt={slide.alt}
               fill
               priority={index === 0}
-              className="object-cover"
+              className={fitClass}
               onError={(e) => {
                 // fallback to <img> if Next.js Image fails
                 e.target.style.display = 'none';
                 const fallback = document.createElement('img');
                 fallback.src = slide.image;
                 fallback.alt = slide.alt;
-                fallback.className = 'object-cover w-full h-full';
+                fallback.className = `${fitClass} w-full h-full`;
                 e.target.parentNode.appendChild(fallback);
               }}
             />
@@ -76,30 +81,39 @@ export default function Hero({ heroData }) {
         </div>
       ))}
 
-      {/* Static title and description */}
-      <div className="absolute top-1/2 left-10 transform -translate-y-1/2 z-30 max-w-lg">
-        <div className="bg-black/50 p-6 rounded-xl">
-          <h1 className="text-3xl md:text-5xl font-bold text-white">
-            {title}
-          </h1>
-          <p className="mt-4 text-lg text-gray-200">
-            {description}
-          </p>
+      {/* Overlay text only when provided by CMS */}
+      {(title || description) && (
+        <div className="absolute top-1/2 left-10 transform -translate-y-1/2 z-30 max-w-lg">
+          <div className="bg-black/50 p-6 rounded-xl">
+            {title && (
+              <h1 className="text-3xl md:text-5xl font-bold text-white">
+                {title}
+              </h1>
+            )}
+            {description && (
+              <p className="mt-4 text-lg text-gray-200">
+                {description}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Dots (manual control + reflect current slide) */}
-      <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex space-x-3 z-30">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => handleDotClick(index)}
-            className={`w-3 h-3 rounded-full ${
-              index === current ? "bg-white" : "bg-gray-500"
-            }`}
-          />
-        ))}
-      </div>
+      {slides.length > 1 && (
+        <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 flex space-x-3 z-30">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => handleDotClick(index)}
+              className={`w-3 h-3 rounded-full ${
+                index === current ? "bg-white" : "bg-gray-500"
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 } 

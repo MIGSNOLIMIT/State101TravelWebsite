@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function EditTopBar() {
   const [address, setAddress] = useState("");
@@ -11,6 +12,8 @@ export default function EditTopBar() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -37,16 +40,8 @@ export default function EditTopBar() {
     return () => { didCancel = true; };
   }, []);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setMessage("");
-    // Validation: all fields required
-    if (!address.trim() || !phone.trim() || !email.trim()) {
-      setMessage("All fields are required. Please fill in address, phone, and email.");
-      setSaving(false);
-      return;
-    }
+  const doSave = async () => {
+    setPendingSave(true);
     const res = await fetch("/api/topbar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -54,7 +49,21 @@ export default function EditTopBar() {
     });
     if (res.ok) setMessage("Top bar updated!");
     else setMessage("Error saving changes.");
+    setPendingSave(false);
     setSaving(false);
+    setConfirmOpen(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage("");
+    const anyEmpty = !address.trim() || !phone.trim() || !email.trim();
+    if (anyEmpty) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSave();
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -99,6 +108,15 @@ export default function EditTopBar() {
           </button>
           {message && <div className="mt-4 text-center text-blue-600">{message}</div>}
         </form>
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Save top bar with empty fields?"
+          message="Some top bar fields are empty. Are you sure you want to save with empty values?"
+          confirmText={pendingSave ? "Saving..." : "Save anyway"}
+          cancelText="Cancel"
+          onCancel={() => { setConfirmOpen(false); setSaving(false); }}
+          onConfirm={doSave}
+        />
       </div>
       <div className="absolute top-40 left-6 z-10">
         <button

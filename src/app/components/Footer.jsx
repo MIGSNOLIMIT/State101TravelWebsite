@@ -7,12 +7,8 @@ import { useEffect, useState } from "react";
 
 export default function Footer() {
   const [contact, setContact] = useState({ address: "", phone: "", email: "" });
-  const [socials, setSocials] = useState([
-    { platform: "Facebook", url: "" },
-    { platform: "Instagram", url: "" },
-    { platform: "TikTok", url: "" },
-  ]);
-  const [logoUrl, setLogoUrl] = useState("/images/logo.png");
+  const [socials, setSocials] = useState([]);
+  const [logoUrl, setLogoUrl] = useState("");
 
   useEffect(() => {
     async function fetchFooter() {
@@ -29,14 +25,10 @@ export default function Footer() {
           try {
             links = JSON.parse(data.socialLinks || "[]");
           } catch {
-            links = [
-              { platform: "Facebook", url: "" },
-              { platform: "Instagram", url: "" },
-              { platform: "TikTok", url: "" },
-            ];
+            links = [];
           }
-          setSocials(links);
-          setLogoUrl(data.logoUrl || "/images/logo.png");
+          setSocials(Array.isArray(links) ? links.filter((l) => l && l.url) : []);
+          setLogoUrl(data.logoUrl || "");
         }
       } catch (err) {
         // fallback to defaults if needed
@@ -50,54 +42,68 @@ export default function Footer() {
       className="text-gray-200 py-10 px-6"
       style={{
         background:
-          "linear-gradient(90deg, #A40000 32%, #E92C2C 80%, #DB0202 100%)",
+          "linear-gradient(90deg, rgba(15, 70, 149, 0.95) 30.77%, rgba(10, 46, 98, 0.95) 55.29%, rgba(7, 34, 73, 0.95) 80%, rgba(5, 22, 47, 0.95) 100%)",
       }}
     >
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
         {/* Left Side - Links */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 flex-1">
           {/* Contact Us */}
-          <div>
-            <h3 className="text-lg font-semibold underline mb-4">Contact Us</h3>
-            <ul className="space-y-3">
-              <li className="flex items-start space-x-3">
-                <MapPinIcon className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                <span>{contact.address}</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <PhoneIcon className="w-5 h-5 text-gray-300" />
-                <a href={`tel:${contact.phone}`} className="hover:underline">
-                  {contact.phone}
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <EnvelopeIcon className="w-5 h-5 text-gray-300" />
-                <a href={`mailto:${contact.email}`} className="hover:underline">
-                  {contact.email}
-                </a>
-              </li>
-            </ul>
-          </div>
+          { (contact.address || contact.phone || contact.email) && (
+            <div>
+              <h3 className="text-lg font-semibold underline mb-4">Contact Us</h3>
+              <ul className="space-y-3">
+                {contact.address && (
+                  <li className="flex items-start space-x-3">
+                    <MapPinIcon className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                    <span>{contact.address}</span>
+                  </li>
+                )}
+                {contact.phone && (
+                  <li className="flex items-center space-x-2">
+                    <PhoneIcon className="w-5 h-5 text-gray-300" />
+                    <a href={`tel:${contact.phone}`} className="hover:underline">
+                      {contact.phone}
+                    </a>
+                  </li>
+                )}
+                {contact.email && (
+                  <li className="flex items-center space-x-2">
+                    <EnvelopeIcon className="w-5 h-5 text-gray-300" />
+                    <a href={`mailto:${contact.email}`} className="hover:underline">
+                      {contact.email}
+                    </a>
+                  </li>
+                )}
+                {/* Office Hours (static) */}
+                <li className="flex items-center space-x-2">
+                  <span>Office Hours 9AM-5PM</span>
+                </li>
+              </ul>
+            </div>
+          )}
 
           {/* Our Socials */}
-          <div>
-            <h3 className="text-lg font-semibold underline mb-4">Our Socials</h3>
-            <ul className="space-y-3">
-              {socials.map((item, idx) => (
-                <li key={idx} className="flex items-center space-x-2">
-                  {/* Use icons based on platform */}
-                  {item.platform === "Facebook" && <Facebook className="w-5 h-5 text-gray-300" />}
-                  {item.platform === "Instagram" && <Instagram className="w-5 h-5 text-gray-300" />}
-                  {item.platform === "TikTok" && <FaTiktok className="w-5 h-5 text-gray-300" />}
-                  <a href={item.url} target="_blank" className="hover:underline">
-                    {item.platform}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {socials.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold underline mb-4">Our Socials</h3>
+              <ul className="space-y-3">
+                {socials.map((item, idx) => (
+                  <li key={idx} className="flex items-center space-x-2">
+                    {/* Use icons based on platform */}
+                    {item.platform === "Facebook" && <Facebook className="w-5 h-5 text-gray-300" />}
+                    {item.platform === "Instagram" && <Instagram className="w-5 h-5 text-gray-300" />}
+                    {item.platform === "TikTok" && <FaTiktok className="w-5 h-5 text-gray-300" />}
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      {item.platform}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          {/* Admin Login Only */}
+          {/* Admin Login + Nav Bar */}
           <div>
             <ul className="space-y-3">
               <li>
@@ -106,19 +112,27 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
+            <nav className="mt-6 flex flex-col space-y-2 text-lg font-medium">
+              <a href="/" className="text-gray-200 hover:text-blue-200">Home</a>
+              <a href="/services" className="text-gray-200 hover:text-blue-200">Services</a>
+              <a href="/about" className="text-gray-200 hover:text-blue-200">About Us</a>
+              <a href="/tos" className="text-gray-200 hover:text-blue-200">Terms of Services</a>
+            </nav>
           </div>
         </div>
 
         {/* Right Side - Logo */}
-        <div className="flex-shrink-0">
-          <Image
-            src={logoUrl}
-            alt="State101 Travel Logo"
-            width={100}
-            height={100}
-            className="rounded-full object-cover"
-          />
-        </div>
+        {logoUrl && (
+          <div className="flex-shrink-0">
+            <Image
+              src={logoUrl}
+              alt="State101 Travel Logo"
+              width={100}
+              height={100}
+              className="rounded-full object-cover"
+            />
+          </div>
+        )}
       </div>
     </footer>
   );

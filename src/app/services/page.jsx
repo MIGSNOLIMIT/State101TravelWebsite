@@ -7,12 +7,6 @@ import React from "react";
 import AlternatingSection from "./components/AlternatingSection";
 import ServicesHero from "./components/ServicesHero";
 import WhyChoose from "./components/WhyChoose";
-
-const staticHero = {
-  heroImageUrl: "/images/services-hero.jpg",
-  heroTitle: "Our Services",
-  heroDesc: "At State101 Travel, we make every process simpler, clearer, and stress-free, so you can focus on your journey ahead.",
-};
 const staticSections = [
   {
     iconUrl: "/images/section1.png",
@@ -55,17 +49,19 @@ export default function ServicesPage() {
     fetchPage();
   }, []);
 
-  // Use CMS data if available, otherwise fallback to static
-  const hero = page ? {
-    heroImageUrl: page.heroImageUrl || staticHero.heroImageUrl,
-    heroTitle: page.heroTitle || staticHero.heroTitle,
-    heroDesc: page.heroDesc || staticHero.heroDesc,
-  } : staticHero;
+  // CMS-only hero: render only when CMS provides an image URL
+  const hero = page && page.heroImageUrl ? {
+    heroImageUrl: page.heroImageUrl,
+    heroTitle: page.heroTitle || null,
+    heroDesc: page.heroDesc || null,
+  } : null;
   const sections = page?.sections?.length ? page.sections : staticSections;
 
   return (
     <main>
-      <ServicesHero bannerSrc={hero.heroImageUrl} title={hero.heroTitle} description={hero.heroDesc} />
+      {hero && (
+        <ServicesHero bannerSrc={hero.heroImageUrl} title={hero.heroTitle} description={hero.heroDesc} />
+      )}
       {sections.map((section, index) => (
         <AlternatingSection
           key={section.id || index}

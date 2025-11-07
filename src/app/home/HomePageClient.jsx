@@ -28,29 +28,21 @@ export default function HomePageClient({ cmsData }) {
       {
         title: "Canada",
         description:
-          "Assistance for Canada visa applications, including tourist, student, and work visas. Expert guidance and document review.",
+          "Expert assistance for Express Entry Permanent Residency. We provide start-to-finish support for a successful application and approval. Clear guidance. Proven success.",
         iconUrl: "/images/Canada_Flag_logo.png",
         link: "/services",
       },
       {
         title: "United States",
         description:
-          "Support for U.S. visa applications, including B1/B2, student, and work visas. Professional advice and interview preparation.",
+          "Get comprehensive, start-to-finish assistance for your visa application. Benefit from thorough assessments and personalized pre-interview briefings. We maximize your chances for success.",
         iconUrl: "/images/US_Flag_logo.png",
         link: "/services",
       },
     ],
   };
 
-  const staticTestimonialsData = {
-    title: "Our successful clients",
-    images: [
-      "/images/testimonial1.jpg",
-      "/images/testimonial2.jpg",
-      "/images/testimonial3.jpg",
-    ],
-    videoUrl: "/videos/testimonials.mp4",
-  };
+  // No static fallbacks for testimonials
 
   // Merge CMS overrides
   const heroData = {
@@ -59,11 +51,9 @@ export default function HomePageClient({ cmsData }) {
   };
 
   const testimonialsData = {
-    ...staticTestimonialsData,
-    images: cmsData?.testimonialsImages?.length
-      ? cmsData.testimonialsImages
-      : staticTestimonialsData.images,
-    videoUrl: cmsData?.testimonialsVideoUrl || staticTestimonialsData.videoUrl,
+    title: cmsData?.testimonialsTitle || null,
+    images: Array.isArray(cmsData?.testimonialsImages) ? cmsData.testimonialsImages : [],
+    videoUrl: cmsData?.testimonialsVideoUrl || "",
   };
 
   return (

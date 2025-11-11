@@ -13,9 +13,9 @@ export default function TopBar() {
         if (res.ok) {
           const data = await res.json();
           setTopBar({
-            address: data.address || "2nd Floor, Unit 223, One Oasis Hub B, Ortigas Ave Ext., Pasig City",
-            phone: data.phone || "+63 961 084 2538",
-            email: data.email || "state101ortigasbranch@gmail.com",
+            address: data.address || "",
+            phone: data.phone || "",
+            email: data.email || "",
           });
         }
       } catch (err) {
@@ -24,6 +24,8 @@ export default function TopBar() {
     }
     fetchTopBar();
   }, []);
+
+  if (!topBar.address && !topBar.phone && !topBar.email) return null; // Hide when CMS provides nothing
 
   return (
     <div
@@ -34,31 +36,37 @@ export default function TopBar() {
       }}
     >
       {/* Location */}
-      <div className="flex items-center gap-2">
-        <MapPinIcon className="w-4 h-4 text-gray-300" />
-        <span>{topBar.address}</span>
-      </div>
+      {topBar.address && (
+        <div className="flex items-center gap-2">
+          <MapPinIcon className="w-4 h-4 text-gray-300" />
+          <span>{topBar.address}</span>
+        </div>
+      )}
 
       {/* Phone Numbers */}
-      <div className="flex items-center gap-2">
-        <PhoneIcon className="w-4 h-4 text-gray-300" />
-        <span>
-          <a href={`tel:${topBar.phone}`} className="hover:underline">
-            {topBar.phone}
-          </a>
-        </span>
-      </div>
+      {topBar.phone && (
+        <div className="flex items-center gap-2">
+          <PhoneIcon className="w-4 h-4 text-gray-300" />
+          <span>
+            <a href={`tel:${topBar.phone}`} className="hover:underline">
+              {topBar.phone}
+            </a>
+          </span>
+        </div>
+      )}
 
       {/* Email */}
-      <div className="flex items-center gap-2">
-        <EnvelopeIcon className="w-4 h-4 text-gray-300" />
-        <a
-          href={`mailto:${topBar.email}`}
-          className="hover:underline"
-        >
-          {topBar.email}
-        </a>
-      </div>
+      {topBar.email && (
+        <div className="flex items-center gap-2">
+          <EnvelopeIcon className="w-4 h-4 text-gray-300" />
+          <a
+            href={`mailto:${topBar.email}`}
+            className="hover:underline"
+          >
+            {topBar.email}
+          </a>
+        </div>
+      )}
     </div>
   );
 }

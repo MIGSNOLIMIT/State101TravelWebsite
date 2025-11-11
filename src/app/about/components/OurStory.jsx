@@ -7,7 +7,7 @@ export default function OurStory() {
         {/* Title + Icon */}
         <div className="flex items-center mb-2">
           <Image
-            src="/icons/Airplane.png"
+            src="/icons/Airplane2.png"
             alt="Airplane Icon"
             width={40}
             height={40}
@@ -16,12 +16,7 @@ export default function OurStory() {
           <h2 className="text-3xl font-bold text-gray-800">Our Story</h2>
         </div>
 
-        {/* Subtext + Divider */}
-        <div className="mb-10">
-          <p className="text-gray-600 mb-2">2017, 8 years ago</p>
-          <div className="h-1 bg-blue-500 w-full"></div>
-        </div>
-
+   
         {/* Two-column content */}
         <div className="grid md:grid-cols-2 gap-10 text-gray-700 leading-relaxed">
           <p>

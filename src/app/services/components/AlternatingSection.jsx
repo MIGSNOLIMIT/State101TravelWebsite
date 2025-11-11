@@ -31,7 +31,7 @@ export default function AlternatingSection({
               <p className="text-gray-700 mb-6">{description}</p>
               <div className="flex justify-center md:justify-start">
                 <a
-                  href="https://state101-aichatbot.streamlit.app"
+                  href="https://state101travel-ai-chatbot.streamlit.app"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`${btnClass} text-white px-10 py-3 rounded flex items-center justify-center`}
@@ -73,7 +73,7 @@ export default function AlternatingSection({
               <p className="text-gray-700 mb-6">{description}</p>
               <div className="flex justify-center md:justify-start">
                 <a
-                  href="https://state101-aichatbot.streamlit.app"
+                  href="https://state101travel-ai-chatbot.streamlit.app/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`${btnClass} text-white px-10 py-3 rounded flex items-center justify-center`}

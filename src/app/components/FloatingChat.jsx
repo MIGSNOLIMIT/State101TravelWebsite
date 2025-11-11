@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export default function FloatingChat() {
-  const chatbotUrl = "https://state101-aichatbot.streamlit.app/?embed=true";
+  const chatbotUrl = "https://state101travel-ai-chatbot.streamlit.app/?embed=true";
 
   const [sessionActive, setSessionActive] = useState(false);
   const [open, setOpen] = useState(false);

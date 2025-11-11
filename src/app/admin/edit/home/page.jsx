@@ -5,12 +5,15 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import { useRouter } from "next/navigation";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function EditHomePage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -27,10 +30,8 @@ export default function EditHomePage() {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setMessage("");
+  const doSave = async () => {
+    setPendingSave(true);
     const res = await fetch("/api/admin/homepage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -38,7 +39,23 @@ export default function EditHomePage() {
     });
     if (res.ok) setMessage("Homepage updated!");
     else setMessage("Error saving changes.");
+    setPendingSave(false);
     setSaving(false);
+    setConfirmOpen(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage("");
+    const anyEmpty = !Array.isArray(data.heroImages) || data.heroImages.length === 0
+      || !Array.isArray(data.testimonialsImages) || data.testimonialsImages.length === 0
+      || !data.testimonialsVideoUrl;
+    if (anyEmpty) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSave();
   };
 
   const handleImageChange = (val) => {
@@ -54,6 +71,11 @@ export default function EditHomePage() {
   };
 
   const handleTestimonialImagesChange = (val) => {
+    // Allow clearing (empty array) and enforce images-only
+    if (!val) {
+      handleChange("testimonialsImages", []);
+      return;
+    }
     const invalid = Array.isArray(val)
       ? val.some(v => v && v.match(/\.mp4$/i))
       : val && val.match(/\.mp4$/i);
@@ -61,12 +83,17 @@ export default function EditHomePage() {
       setMessage("Error: Only image files are allowed in the Testimonials Images section.");
       return;
     }
-    handleChange("testimonialsImages", val);
+    handleChange("testimonialsImages", Array.isArray(val) ? val : [val]);
   };
 
   const handleVideoChange = (val) => {
-    if (!val || !val.match(/\.mp4$/i)) {
-      setMessage("Error: Only MP4 video files are allowed in the Video section.");
+    // Allow clearing the video
+    if (!val) {
+      handleChange("testimonialsVideoUrl", "");
+      return;
+    }
+    if (!val.match(/\.mp4$/i)) {
+      setMessage("Error: Only MP4 files are allowed in the Video section.");
       return;
     }
     handleChange("testimonialsVideoUrl", val);
@@ -83,8 +110,8 @@ export default function EditHomePage() {
         <form onSubmit={handleSave} className="space-y-8">
           {/* Hero Section */}
           <section>
-            <h2 className="text-xl font-bold mb-2 text-blue-600">Hero Section</h2>
-            <label className="block mb-1 font-medium text-blue-700">Hero Images</label>
+            <h2 className="text-xl font-bold mb-2 text-blue-600">First Images Section</h2>
+            <label className="block mb-1 font-medium text-blue-700">Multiple Images</label>
             <MediaLibraryPicker
               value={data.heroImages}
               onChange={handleImageChange}
@@ -92,19 +119,10 @@ export default function EditHomePage() {
               accept="image/*"
             />
           </section>
-          {/* About Section (static, not editable) */}
-          <section>
-            <h2 className="text-xl font-bold mb-2 text-blue-600">About Section</h2>
-            <div className="text-gray-500 italic">This section uses static content.</div>
-          </section>
-          {/* Services Section (static, not editable) */}
-          <section>
-            <h2 className="text-xl font-bold mb-2 text-blue-600">Services Section</h2>
-            <div className="text-gray-500 italic">This section uses static content.</div>
-          </section>
+          {/* About and Services static sections removed as requested */}
           {/* Testimonials Section */}
           <section>
-            <h2 className="text-xl font-bold mb-2 text-blue-600">Testimonials Section</h2>
+            <h2 className="text-xl font-bold mb-2 text-blue-600">Our Successful Client Section</h2>
             <label className="block mb-1 font-medium text-blue-700">Images</label>
             <MediaLibraryPicker
               value={data.testimonialsImages}
@@ -125,6 +143,15 @@ export default function EditHomePage() {
           </button>
           {message && <div className="mt-4 text-center text-blue-600">{message}</div>}
         </form>
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Save homepage with empty fields?"
+          message="Some homepage fields (hero or testimonials) are empty. Are you sure you want to save with empty values?"
+          confirmText={pendingSave ? "Saving..." : "Save anyway"}
+          cancelText="Cancel"
+          onCancel={() => { setConfirmOpen(false); setSaving(false); }}
+          onConfirm={doSave}
+        />
       </div>
       <div className="absolute top-40 left-6 z-10">
         <button

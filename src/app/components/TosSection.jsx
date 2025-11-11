@@ -13,12 +13,7 @@ export default function TosSection({ content = "" }) {
   if (!html || html.trim() === "") return null;
   return (
     <section className="mb-12">
-      {/* Header like the original design */}
-      <div className="border-t-4 border-blue-500 pt-6">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Terms of Service</h1>
-        <p className="text-gray-600 mb-6">
-          By engaging with State101 Travel, you agree to the following terms and conditions.
-        </p>
+      <div className="pt-6">
         <div className={styles.content} dangerouslySetInnerHTML={{ __html: html }} />
       </div>
     </section>

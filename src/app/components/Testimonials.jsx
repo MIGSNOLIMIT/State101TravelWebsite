@@ -27,7 +27,7 @@ export default function Testimonials({ images = [] }) {
   }, [images, CMS_URL]);
 
   const gradients = [
-    "bg-gradient-to-r from-[#05162F] via-[#0A2E62] to-[#0F4695]",
+    "bg-gradient-to-r from-[#00008b] via-[#00006b] to-[#00008b]",
     "bg-gradient-to-r from-[#810000] via-[#A40000] to-[#DB0202]",
   ];
 

@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 export default function Footer() {
   const [contact, setContact] = useState({ address: "", phone: "", email: "" });
   const [socials, setSocials] = useState([]);
-  const [logoUrl, setLogoUrl] = useState("");
+  const [logoUrl, setLogoUrl] = useState("/images/logo.png");
 
   useEffect(() => {
     async function fetchFooter() {
@@ -28,7 +28,7 @@ export default function Footer() {
             links = [];
           }
           setSocials(Array.isArray(links) ? links.filter((l) => l && l.url) : []);
-          setLogoUrl(data.logoUrl || "");
+          setLogoUrl(data.logoUrl || "/images/logo.png");
         }
       } catch (err) {
         // fallback to defaults if needed
@@ -42,7 +42,7 @@ export default function Footer() {
       className="text-gray-200 py-10 px-6"
       style={{
         background:
-          "linear-gradient(90deg, rgba(15, 70, 149, 0.95) 30.77%, rgba(10, 46, 98, 0.95) 55.29%, rgba(7, 34, 73, 0.95) 80%, rgba(5, 22, 47, 0.95) 100%)",
+          "linear-gradient(90deg, rgba(0, 0, 139, 0.95) 30.77%, rgba(0, 0, 100, 0.95) 55.29%, rgba(0, 0, 70, 0.95) 80%, rgba(0, 0, 50, 0.95) 100%)",
       }}
     >
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
@@ -103,16 +103,10 @@ export default function Footer() {
             </div>
           )}
 
-          {/* Admin Login + Nav Bar */}
+          {/* Navigation */}
           <div>
-            <ul className="space-y-3">
-              <li>
-                <a href="/admin/login" className="hover:underline text-blue-200 font-semibold">
-                  Admin Login
-                </a>
-              </li>
-            </ul>
-            <nav className="mt-6 flex flex-col space-y-2 text-lg font-medium">
+            <h3 className="text-lg font-semibold underline mb-4">Quick Links</h3>
+            <nav className="flex flex-col space-y-2 text-lg font-medium">
               <a href="/" className="text-gray-200 hover:text-blue-200">Home</a>
               <a href="/services" className="text-gray-200 hover:text-blue-200">Services</a>
               <a href="/about" className="text-gray-200 hover:text-blue-200">About Us</a>
@@ -121,18 +115,20 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Right Side - Logo */}
-        {logoUrl && (
-          <div className="flex-shrink-0">
-            <Image
-              src={logoUrl}
-              alt="State101 Travel Logo"
-              width={100}
-              height={100}
-              className="rounded-full object-cover"
-            />
-          </div>
-        )}
+        {/* Right Side - Logo (clickable admin login) */}
+        <div className="flex-shrink-0">
+          {logoUrl && (
+            <a href="/admin/login" className="block">
+              <Image
+                src={logoUrl}
+                alt="State101 Travel Logo"
+                width={100}
+                height={100}
+                className="rounded-full object-cover cursor-pointer hover:opacity-80 transition"
+              />
+            </a>
+          )}
+        </div>
       </div>
     </footer>
   );

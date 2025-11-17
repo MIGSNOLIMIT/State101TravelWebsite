@@ -1,7 +1,6 @@
 
 import HeroBanner from "./components/HeroBanner";
 import OurStory from "./components/OurStory";
-import MissionVision from "./components/MissionVision";
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +26,6 @@ export default async function AboutPage() {
     <main className="bg-white">
       <HeroBanner bannerSrc={heroSrc} />
       <OurStory />
-      <MissionVision />
     </main>
   );
 }

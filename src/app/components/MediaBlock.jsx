@@ -52,7 +52,7 @@ export default function MediaBlock({ media = [], carouselMode }) {
             height={30}
             className="mr-2"
           />
-          <span className="text-lg font-semibold text-[#0F4695]">Reviews</span>
+          <span className="text-lg font-semibold text-[#00008b]">Reviews</span>
         </div>
 
         {/* Section Title */}

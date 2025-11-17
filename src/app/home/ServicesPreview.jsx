@@ -114,7 +114,7 @@ export default function ServicesPreview({ servicesData }) {
                 <div className="mt-auto flex justify-center">
                   <a
                     href={service.link || '/services'}
-                    className={`px-4 py-2 rounded font-bold text-white text-[15px] leading-[17px] ${service.titleColor === 'text-red-600' ? 'bg-red-600 hover:bg-red-700' : 'bg-[#0F4695] hover:bg-blue-700'}`}
+                    className={`px-4 py-2 rounded font-bold text-white text-[15px] leading-[17px] ${service.titleColor === 'text-red-600' ? 'bg-red-600 hover:bg-red-700' : 'bg-[#00008b] hover:bg-[#000070]'}`}
                     style={{ fontFamily: 'Almarai', width: '234px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     Read More

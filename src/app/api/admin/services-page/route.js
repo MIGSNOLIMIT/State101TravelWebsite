@@ -29,6 +29,7 @@ export async function PUT(req) {
         heroDesc: body.heroDesc,
         sectionTitle: body.sectionTitle,
         sectionDesc: body.sectionDesc,
+        requirementsText: body.requirementsText ?? null,
       },
       create: {
         heroImageUrl: body.heroImageUrl,
@@ -36,6 +37,7 @@ export async function PUT(req) {
         heroDesc: body.heroDesc,
         sectionTitle: body.sectionTitle,
         sectionDesc: body.sectionDesc,
+        requirementsText: body.requirementsText ?? null,
       },
     });
     // Update sections (replace all)

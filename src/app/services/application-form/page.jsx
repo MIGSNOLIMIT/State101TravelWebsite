@@ -5,7 +5,7 @@ import Image from "next/image";
 
 import { useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import Image from "next/image";
+
 
 export default function ApplicationFormPage({ searchParams, requirements = [] }) {
   const submitted = searchParams?.submitted === "1";

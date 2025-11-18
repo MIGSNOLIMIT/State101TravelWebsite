@@ -180,33 +180,14 @@ export default function ApplicationFormPage({ searchParams, requirements = [] })
         </div>
         <section className="mt-10 bg-white/95 rounded-xl shadow p-6 md:p-8">
           <h2 className="text-xl font-bold text-blue-700 mb-4">Initial Requirements</h2>
-          {requirements.length === 0 ? (
-            <p className="text-gray-600">No requirements available at the moment.</p>
-          ) : (
-            <ul className="grid gap-4 md:grid-cols-2">
-              {requirements.map((item) => (
-                <li key={item.id} className="border rounded p-4">
-                  <div className="flex items-start gap-3">
-                    {item.icon ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.icon} alt="" className="h-6 w-6 mt-1" />
-                    ) : (
-                      <span className="h-2 w-2 mt-2 rounded-full bg-blue-600 inline-block" />
-                    )}
-                    <div>
-                      <div className="font-semibold text-gray-900">
-                        {item.title}
-                        {item.isRequired && (
-                          <span className="ml-2 text-xs font-medium text-red-600">Required</span>
-                        )}
-                      </div>
-                      <p className="text-gray-600 text-sm">{item.description}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className="grid gap-4 md:grid-cols-2">
+            <li className="border rounded p-4">Valid passport (Photocopy)</li>
+            <li className="border rounded p-4">2x2 photo (white background)</li>
+            <li className="border rounded p-4">Training Certificate (if available)</li>
+            <li className="border rounded p-4">Diploma (Photocopy if available)</li>
+            <li className="border rounded p-4">Updated Resume</li>
+            <li className="border rounded p-4">Other supporting documents may be discussed during your assessment.</li>
+          </ul>
         </section>
       </div>
     </main>

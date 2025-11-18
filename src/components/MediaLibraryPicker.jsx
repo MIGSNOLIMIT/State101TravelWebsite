@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseMediaBucket = process.env.NEXT_PUBLIC_SUPABASE_MEDIA_BUCKET || 'state101cms';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 function MediaLibraryPicker({ multiple = false, value, onChange, accept }) {
   const [mediaFiles, setMediaFiles] = useState([]);
+  const [errorMsg, setErrorMsg] = useState("");
   const [nextCursor, setNextCursor] = useState(null);
   const [selected, setSelected] = useState(multiple ? (value || []) : (value || ""));
   const [uploading, setUploading] = useState(false);
@@ -24,10 +26,16 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept }) {
 
   const fetchMedia = async (q = "", append = false) => {
     // List files from Supabase bucket
-    let { data, error } = await supabase.storage.from('state101cms').list('', { limit: 100 });
+    let { data, error } = await supabase.storage.from(supabaseMediaBucket).list('', { limit: 100 });
     if (error) {
       setMediaFiles([]);
+      setErrorMsg("Error loading files: " + error.message);
       return;
+    }
+    if (!data || data.length === 0) {
+      setErrorMsg("No files found in bucket: " + supabaseMediaBucket);
+    } else {
+      setErrorMsg("");
     }
     let files = data;
     // Filter by search query
@@ -44,7 +52,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept }) {
       return '';
     };
     const mediaFilesList = files.map(f => {
-      const url = supabase.storage.from('state101cms').getPublicUrl(f.name).data.publicUrl;
+      const url = supabase.storage.from(supabaseMediaBucket).getPublicUrl(f.name).data.publicUrl;
       return {
         id: f.id || f.name,
         name: f.name,
@@ -98,18 +106,20 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept }) {
     try {
       const uploadedMedia = [];
       for (const file of files) {
-  const { data, error } = await supabase.storage.from('state101cms').upload(file.name, file, {
+        const { data, error } = await supabase.storage.from(supabaseMediaBucket).upload(file.name, file, {
           cacheControl: '3600',
           upsert: true,
         });
         if (!error) {
-          const publicUrl = supabase.storage.from('state101cms').getPublicUrl(file.name).data.publicUrl;
+          const publicUrl = supabase.storage.from(supabaseMediaBucket).getPublicUrl(file.name).data.publicUrl;
           uploadedMedia.push({
             url: publicUrl,
             type: file.type,
             name: file.name,
             description: file.name,
           });
+        } else {
+          setErrorMsg("Upload failed: " + error.message);
         }
       }
       // Refresh media list so uploaded files appear
@@ -125,7 +135,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept }) {
         onChange(uploadedMedia[0].url);
       }
     } catch (err) {
-      // Handle error
+      setErrorMsg("Upload error: " + err.message);
       console.error("Supabase upload error", err);
     }
     setUploading(false);
@@ -163,6 +173,9 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept }) {
         />
         {uploading && <span className="text-blue-600 text-sm">Uploading...</span>}
       </div>
+      {errorMsg && (
+        <div className="text-center text-red-600 my-4">{errorMsg}</div>
+      )}
       <div
         className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-96 overflow-y-auto"
         onScroll={handleScroll}

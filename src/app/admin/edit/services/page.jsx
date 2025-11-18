@@ -164,23 +164,23 @@ export default function EditServicesPage() {
               />
             </section>
           ))}
+          {/* Requirements Textarea (simple) */}
+          <div className="mt-12">
+            <h2 className="text-xl font-bold text-blue-700 mb-4 text-center">Initial Requirements (optional)</h2>
+            <p className="text-sm text-gray-600 mb-2 text-center">Leave empty to hide on the Services page. Use new lines for each item.</p>
+            <textarea
+              value={page.requirementsText || ""}
+              onChange={(e) => handleChange("requirementsText", e.target.value)}
+              className="w-full min-h-[160px] resize-y px-4 py-3 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
+              placeholder={"Valid passport (Photocopy)\n2x2 photo (white background)\nTraining Certificate (if available)\nDiploma (Photocopy if available)\nUpdated Resume\nOther supporting documents may be discussed during your assessment."}
+            />
+            {reqMessage && <div className="mt-3 text-center text-blue-600">{reqMessage}</div>}
+          </div>
           <button type="submit" disabled={saving} className="w-full py-3 rounded bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold hover:from-blue-700 hover:to-red-700 transition">
             {saving ? "Saving..." : "Save Changes"}
           </button>
           {message && <div className="mt-4 text-center text-blue-600">{message}</div>}
         </form>
-        {/* Requirements Textarea (simple) */}
-        <div className="mt-12">
-          <h2 className="text-xl font-bold text-blue-700 mb-4 text-center">Initial Requirements (optional)</h2>
-          <p className="text-sm text-gray-600 mb-2 text-center">Leave empty to hide on the Services page. Use new lines for each item.</p>
-          <textarea
-            value={page.requirementsText || ""}
-            onChange={(e) => handleChange("requirementsText", e.target.value)}
-            className="w-full min-h-[160px] resize-y px-4 py-3 border rounded bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-            placeholder={"Valid passport (Photocopy)\n2x2 photo (white background)\nTraining Certificate (if available)\nDiploma (Photocopy if available)\nUpdated Resume\nOther supporting documents may be discussed during your assessment."}
-          />
-          {reqMessage && <div className="mt-3 text-center text-blue-600">{reqMessage}</div>}
-        </div>
         <ConfirmDialog
           open={confirmOpen}
           title="Save services page with empty fields?"

@@ -26,6 +26,8 @@ export default function ApplicationsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("");
   const router = useRouter();
   const importInputRef = useRef(null);
 
@@ -106,44 +108,70 @@ export default function ApplicationsPage() {
           <h1 className="text-2xl font-bold text-blue-700">Applications</h1>
           {msg && <div className="text-sm text-red-600">{msg}</div>}
         </div>
-        <div className="flex justify-end mb-4 gap-3">
-          <a
-            href="/api/backup/generate?mode=full"
-            className="px-4 py-2 rounded bg-purple-600 text-white font-semibold hover:bg-purple-700"
-            title="Download full backup"
-          >
-            Backup (ZIP)
-          </a>
-          <button
-            onClick={() => importInputRef.current?.click()}
-            className="px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700"
-            title="Import a backup ZIP"
-          >
-            Import Backup
-          </button>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/zip"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onImportBackup(f);
-              e.target.value = "";
-            }}
-          />
-          <a href="/admin/backups" className="px-4 py-2 rounded bg-gray-100 text-gray-800 hover:bg-gray-200" title="Open backups page">More…</a>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+          <div className="flex gap-2 mb-2 md:mb-0">
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="border rounded px-3 py-2 w-48"
+            />
+            <select
+              value={filter}
+              onChange={e => setFilter(e.target.value)}
+              className="border rounded px-3 py-2 w-40"
+            >
+              <option value="">All Statuses</option>
+              {STATUS_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-3">
+            <a
+              href="/api/backup/generate?mode=full"
+              className="px-4 py-2 rounded bg-purple-600 text-white font-semibold hover:bg-purple-700"
+              title="Download full backup"
+            >
+              Backup (ZIP)
+            </a>
+            <button
+              onClick={() => importInputRef.current?.click()}
+              className="px-4 py-2 rounded bg-green-600 text-white font-semibold hover:bg-green-700"
+              title="Import a backup ZIP"
+            >
+              Import Backup
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/zip"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onImportBackup(f);
+                e.target.value = "";
+              }}
+            />
+            <a href="/admin/backups" className="px-4 py-2 rounded bg-gray-100 text-gray-800 hover:bg-gray-200" title="Open backups page">More…</a>
+          </div>
         </div>
         {loading ? (
           <div className="p-6 text-center">Loading…</div>
         ) : (
           <div className="overflow-y-auto" style={{ maxHeight: "85vh" }}>
             <div className="grid gap-6 md:grid-cols-2">
-              {items.map((it, idx) => {
-                const cls = statusClasses(it.status);
-                const num = String(idx + 1).padStart(2, "0");
-                const hasFiles = (it._count?.files || 0) > 0;
-                return (
+              {items
+                .filter(it =>
+                  (!search || it.fullName.toLowerCase().includes(search.toLowerCase())) &&
+                  (!filter || it.status === filter)
+                )
+                .map((it, idx) => {
+                  const cls = statusClasses(it.status);
+                  const num = String(idx + 1).padStart(2, "0");
+                  const hasFiles = (it._count?.files || 0) > 0;
+                  return (
                   <div key={it.id} className="rounded-lg border shadow bg-white">
                     <div className="bg-blue-700 text-white px-4 py-2 rounded-t-lg flex items-center justify-between">
                       <span>Applicant {num}</span>
@@ -161,6 +189,9 @@ export default function ApplicationsPage() {
                       <div className="flex justify-between mb-4">
                         <div>Available Time: <span className="font-semibold">{it.availableTime}</span></div>
                         <div>Available Day: <span className="font-semibold">{it.availableDay}</span></div>
+                      </div>
+                      <div className="mb-2 text-gray-600 text-xs">
+                        Submitted: <span className="font-semibold">{it.createdAt ? new Date(it.createdAt).toLocaleString() : "Unknown"}</span>
                       </div>
 
                       <div className="flex items-center gap-3">

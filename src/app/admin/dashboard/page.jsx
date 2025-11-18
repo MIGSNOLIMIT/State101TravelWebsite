@@ -108,13 +108,13 @@ export default function AdminDashboard() {
 							       onClick={() => setProfileOpen(!profileOpen)}
 							       className="flex items-center space-x-3 bg-[#00008b] rounded-xl p-4 hover:bg-[#000070] transition text-lg"
 						       >
-							       <Image
-								       src="/images/logo.png"
-								       alt="Profile"
-								       width={56}
-								       height={56}
-								       className="rounded-full"
-							       />
+								       <Image
+									       src="/icons/userlogo.png"
+									       alt="User Profile Logo"
+									       width={56}
+									       height={56}
+									       className="rounded-full"
+								       />
 							       <span className="text-white font-semibold text-xl">{userName}</span>
 						       </button>
 					       {profileOpen && (

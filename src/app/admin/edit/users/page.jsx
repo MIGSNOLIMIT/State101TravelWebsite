@@ -62,8 +62,8 @@ export default function AdminUsersPage() {
       setMessage("Email address must be at least 6 characters.");
       return;
     }
-    if (emailLength > 30) {
-      setMessage("Email address must not exceed 30 characters.");
+    if (emailLength > 254) {
+      setMessage("Email address must not exceed 254 characters.");
       return;
     }
     // Common domain typo check

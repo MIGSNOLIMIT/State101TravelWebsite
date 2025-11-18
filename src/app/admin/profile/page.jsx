@@ -87,8 +87,8 @@ export default function ProfileSettings() {
 
         <div className="flex flex-col items-center mb-6">
           <Image
-            src="/images/logo.png"
-            alt="Profile"
+            src="/icons/userlogo.png"
+            alt="User Profile Logo"
             width={100}
             height={100}
             className="rounded-full mb-4"

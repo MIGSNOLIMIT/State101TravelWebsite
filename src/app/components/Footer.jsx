@@ -105,7 +105,7 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h3 className="text-lg font-semibold underline mb-4">Quick Links</h3>
+            <h3 className="text-lg font-semibold underline mb-4">Navigate</h3>
             <nav className="flex flex-col space-y-2 text-lg font-medium">
               <a href="/" className="text-gray-200 hover:text-blue-200">Home</a>
               <a href="/services" className="text-gray-200 hover:text-blue-200">Services</a>

@@ -7,7 +7,7 @@ import { useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 
-export default function ApplicationFormPage({ searchParams, requirements = [] }) {
+export default function ApplicationFormPage({ searchParams }) {
   const submitted = searchParams?.submitted === "1";
   const errorParam = searchParams?.error;
   const [submitting, setSubmitting] = useState(false);

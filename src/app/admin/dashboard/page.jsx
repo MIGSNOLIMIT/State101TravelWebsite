@@ -23,14 +23,6 @@ const sections = [
 		editUrl: "/admin/applications",
 	},
 	{
-		key: "knowledgebase",
-		title: "Chatbot FAQs Center",
-		description: "Edit chatbot knowledge items (FAQs, content).",
-		icon: "/icons/KnowledgeBase.png",
-		color: "bg-red-600",
-		editUrl: "/admin/knowledgebase",
-	},
-	{
 		key: "topbar",
 		title: "Top Bar",
 		description: "Edit address, phone, and email shown at the top of the site.",

@@ -93,13 +93,13 @@ export default function EditServicesPage() {
               accept="image/*"
             />
             {page.heroImageUrl && <Image src={page.heroImageUrl} alt="Hero" width={80} height={40} className="mb-2" />}
-            <label className="block mb-1 font-medium">Hero Title</label>
+            <label className="block mb-1 font-medium">Header Title</label>
             <input
               type="text"
               value={page.heroTitle || ""}
               onChange={e => handleChange("heroTitle", e.target.value)}
               className="w-full px-4 py-2 border rounded mb-3 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
-              placeholder="Hero Title"
+              placeholder="Header Title"
             />
             <label className="block mb-1 font-medium">Header Image Description</label>
             <textarea

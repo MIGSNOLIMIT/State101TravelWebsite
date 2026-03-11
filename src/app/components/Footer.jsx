@@ -98,14 +98,14 @@ export default function Footer() {
           </div>
 
           {/* Admin Login Only */}
-          <div>
-            <ul className="space-y-3">
-              <li>
-                <a href="/admin/login" className="hover:underline text-blue-200 font-semibold">
-                  Admin Login
-                </a>
-              </li>
-            </ul>
+          <div className="flex items-center justify-center mt-4">
+            <Image
+              src={logoUrl}
+              alt="State101 Logo"
+              width={40}
+              height={40}
+              className=""
+            />
           </div>
         </div>
 

@@ -27,7 +27,20 @@ export async function POST(req) {
       data: { resetToken: token },
     });
     // Send email with reset link
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+    // Prefer a fully-qualified public URL if provided; else fall back to Vercel URL on deploy, or localhost in dev
+    const publicUrlRaw = process.env.NEXT_PUBLIC_SITE_URL; // e.g., https://state101.com
+    const vercelUrlRaw = process.env.VERCEL_URL; // e.g., my-app.vercel.app
+    const normalizeUrl = (u) => {
+      if (!u || typeof u !== 'string') return '';
+      // If missing protocol, assume https for safety
+      if (u.startsWith('http://') || u.startsWith('https://')) return u.replace(/\/$/, '');
+      return `https://${u.replace(/\/$/, '')}`;
+    };
+    const baseUrl = publicUrlRaw
+      ? normalizeUrl(publicUrlRaw)
+      : vercelUrlRaw
+      ? normalizeUrl(vercelUrlRaw)
+      : 'http://localhost:3000';
     const resetUrl = `${baseUrl}/admin/reset-password?token=${token}`;
     const transporter = nodemailer.createTransport({
       host: SMTP_HOST,

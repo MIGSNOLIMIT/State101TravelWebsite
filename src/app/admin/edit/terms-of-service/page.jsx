@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const RichTextEditor = dynamic(() => import("@/components/RichTextEditor"), { ssr: false });
 
@@ -18,6 +19,8 @@ export default function EditTermsOfService() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
 
   useEffect(() => {
     let didCancel = false;
@@ -86,10 +89,8 @@ export default function EditTermsOfService() {
     return text;
   }
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setMessage("");
+  const doSave = async () => {
+    setPendingSave(true);
     // Convert content to HTML before saving
     const htmlTerms = {
       ...terms,
@@ -115,7 +116,21 @@ export default function EditTermsOfService() {
       body: JSON.stringify(data),
     });
     setMessage("Terms of Service and Accreditations updated!");
+    setPendingSave(false);
     setSaving(false);
+    setConfirmOpen(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage("");
+    const anyEmpty = !(terms.content && terms.content.trim()) || logos.some(l => !l);
+    if (anyEmpty) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSave();
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -132,15 +147,7 @@ export default function EditTermsOfService() {
       </div>
       <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-3xl">
         <h1 className="text-2xl font-bold text-blue-700 mb-6 text-center">Edit Terms of Service & Accreditations</h1>
-        <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded">
-          <strong>Formatting Guide:</strong>
-          <ul className="list-disc ml-6 mt-2">
-            <li>Lines starting with <code>1. </code>, <code>2. </code>, etc. become section headers.</li>
-            <li>Lines starting with <code>•</code> or <code>-</code> become bullet points.</li>
-            <li>Other lines are converted to paragraphs with line breaks.</li>
-            <li>Your text will be automatically converted to HTML for display.</li>
-          </ul>
-        </div>
+        
         <form onSubmit={handleSave} className="space-y-8">
           <section>
             <label className="block mb-1 font-medium text-blue-700 dark:text-blue-400">Heading</label>
@@ -189,6 +196,15 @@ export default function EditTermsOfService() {
           </button>
           {message && <div className="mt-4 text-center text-blue-600">{message}</div>}
         </form>
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Save terms with empty fields?"
+          message="Some Terms content or accreditation logos are empty. Are you sure you want to save with empty values?"
+          confirmText={pendingSave ? "Saving..." : "Save anyway"}
+          cancelText="Cancel"
+          onCancel={() => { setConfirmOpen(false); setSaving(false); }}
+          onConfirm={doSave}
+        />
       </div>
     </main>
   );

@@ -15,19 +15,21 @@ export async function GET() {
 export async function POST(req) {
   try {
     const { heroImageUrl } = await req.json();
-    // Validate heroImageUrl before saving
-    const validUrl = typeof heroImageUrl === "string" &&
+    // Allow clearing the hero image (null/empty string)
+    const isEmpty = heroImageUrl === null || heroImageUrl === undefined || heroImageUrl === "";
+    // Validate only when a non-empty value is provided
+    const validUrl = isEmpty || (typeof heroImageUrl === "string" &&
       (heroImageUrl.startsWith("http://") ||
        heroImageUrl.startsWith("https://") ||
-       heroImageUrl.startsWith("/"));
+       heroImageUrl.startsWith("/")));
     if (!validUrl) {
       return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
     }
     const about = await prisma.aboutPage.findFirst();
     if (!about) {
-      await prisma.aboutPage.create({ data: { heroImageUrl } });
+      await prisma.aboutPage.create({ data: { heroImageUrl: isEmpty ? null : heroImageUrl } });
     } else {
-      await prisma.aboutPage.update({ where: { id: about.id }, data: { heroImageUrl } });
+      await prisma.aboutPage.update({ where: { id: about.id }, data: { heroImageUrl: isEmpty ? null : heroImageUrl } });
     }
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -7,9 +7,9 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "editor" });
   const [editingUser, setEditingUser] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", email: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", role: "editor" });
   const router = useRouter();
 
   useEffect(() => {
@@ -34,7 +34,12 @@ export default function AdminUsersPage() {
       setUsers(users.filter(u => u.id !== id));
       setMessage("User removed.");
     } else {
-      setMessage("Error removing user.");
+      try {
+        const err = await res.json();
+        setMessage(err?.error || "Error removing user.");
+      } catch {
+        setMessage("Error removing user.");
+      }
     }
   };
 
@@ -57,8 +62,8 @@ export default function AdminUsersPage() {
       setMessage("Email address must be at least 6 characters.");
       return;
     }
-    if (emailLength > 30) {
-      setMessage("Email address must not exceed 30 characters.");
+    if (emailLength > 254) {
+      setMessage("Email address must not exceed 254 characters.");
       return;
     }
     // Common domain typo check
@@ -76,7 +81,7 @@ export default function AdminUsersPage() {
     if (res.ok) {
       const created = await res.json();
       setUsers([...users, created]);
-      setNewUser({ name: "", email: "", password: "" });
+  setNewUser({ name: "", email: "", password: "", role: "editor" });
       setMessage("User created.");
     } else {
       const errorJson = await res.json();
@@ -90,7 +95,7 @@ export default function AdminUsersPage() {
 
   const startEditUser = (user) => {
     setEditingUser(user);
-    setEditForm({ name: user.name || "", email: user.email });
+    setEditForm({ name: user.name || "", email: user.email, role: user.role });
   };
 
   const handleEditFormChange = (field, value) => {
@@ -133,10 +138,16 @@ export default function AdminUsersPage() {
       setEditingUser(null);
       setMessage("User updated.");
     } else {
-      const errorJson = await res.json();
-      if (errorJson?.error === "Email already exists") {
-        setMessage("This Email is already in use.");
-      } else {
+      try {
+        const errorJson = await res.json();
+        if (errorJson?.error === "Email already exists") {
+          setMessage("This Email is already in use.");
+        } else if (errorJson?.error) {
+          setMessage(errorJson.error);
+        } else {
+          setMessage("Error updating user.");
+        }
+      } catch {
         setMessage("Error updating user.");
       }
     }
@@ -182,6 +193,14 @@ export default function AdminUsersPage() {
             placeholder="Password"
             required
           />
+          <select
+            value={newUser.role}
+            onChange={e => handleNewUserChange("role", e.target.value)}
+            className="w-full px-4 py-2 border rounded bg-white text-gray-900 dark:bg-gray-900 dark:text-white"
+          >
+            <option value="editor">Editor</option>
+            <option value="admin">Admin</option>
+          </select>
           <button type="submit" className="w-full py-3 rounded bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold hover:from-blue-700 hover:to-red-700 transition">
             Add User
           </button>
@@ -239,6 +258,14 @@ export default function AdminUsersPage() {
               placeholder="Email"
               required
             />
+            <select
+              value={editForm.role}
+              onChange={e => handleEditFormChange("role", e.target.value)}
+              className="w-full px-4 py-2 border rounded mb-3"
+            >
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
             <div className="flex gap-4 mt-4">
               <button type="submit" className="py-2 px-6 rounded bg-blue-600 text-white font-bold hover:bg-blue-700">Save</button>
               <button type="button" className="py-2 px-6 rounded bg-gray-400 text-white font-bold hover:bg-gray-500" onClick={() => setEditingUser(null)}>Cancel</button>

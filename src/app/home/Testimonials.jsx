@@ -6,7 +6,7 @@ import { useRef } from "react";
 
 // Gradient colors
 const gradients = [
-  "bg-gradient-to-r from-[#05162F] via-[#0A2E62] to-[#0F4695]",
+  "bg-gradient-to-r from-[#00008b] via-[#00006b] to-[#00008b]",
   "bg-gradient-to-r from-[#810000] via-[#A40000] to-[#DB0202]",
 ];
 
@@ -25,18 +25,25 @@ export default function Testimonials({ testimonialsData }) {
     }
   };
 
-  // Use props from internal CMS, fallback to static if missing
-  const images = testimonialsData?.images?.length
-    ? testimonialsData.images
-    : [
-        "/images/testimonial1.jpg",
-        "/images/testimonial2.jpg",
-        "/images/testimonial3.jpg",
-        "/images/testimonial4.jpg",
-        "/images/testimonial5.jpg",
-      ];
-  const videoUrl = testimonialsData?.videoUrl || "";
-  const title = testimonialsData?.title || "Our Successful Clients";
+  // CMS-only: no static fallbacks
+  const images = Array.isArray(testimonialsData?.images)
+    ? testimonialsData.images.filter(Boolean)
+    : [];
+  const videoUrl = typeof testimonialsData?.videoUrl === 'string' && testimonialsData.videoUrl.trim()
+    ? testimonialsData.videoUrl.trim()
+    : "";
+  const hasImages = images.length > 0;
+  const hasVideo = !!videoUrl;
+  const hasMedia = hasImages || hasVideo;
+  // Title rules: if media exists, prefer CMS title, else fallback to default text.
+  // If no media, the section is hidden (so no title or Reviews text).
+  const cmsTitle = typeof testimonialsData?.title === 'string' && testimonialsData.title.trim()
+    ? testimonialsData.title.trim()
+    : null;
+  const computedTitle = hasMedia ? (cmsTitle || 'Our Successful Clients') : null;
+
+  // Hide entire section if no media at all
+  if (!hasMedia) return null;
 
   return (
     <section className="py-20 bg-gray-100 relative">
@@ -50,31 +57,33 @@ export default function Testimonials({ testimonialsData }) {
             height={30}
             className="mr-2"
           />
-          <span className="text-lg font-semibold text-[#0F4695]">Reviews</span>
+          <span className="text-lg font-semibold text-[#00008b]">Reviews</span>
         </div>
 
         {/* Section Title */}
+        {computedTitle && (
           <h2 className="text-3xl font-bold mb-10 text-center text-red-600">
-            {title}
+            {computedTitle}
           </h2>
+        )}
 
-        {/* Responsive Video */}
-        {videoUrl ? (
-          <div className="mb-10 bg-black/10 rounded-lg flex items-center justify-center" style={{ minHeight: '700px' }}>
-            <video
-              src={videoUrl}
-              controls
-              className="rounded-lg shadow-lg"
-              style={{ width: '100%', maxWidth: '1400px', height: '700px', objectFit: 'cover', background: '#222', display: 'block' }}
-            />
-          </div>
-        ) : (
-          <div className="mb-10 bg-black/10 rounded-lg h-64 flex items-center justify-center text-gray-700">
-            No video set. Add a video URL in the admin dashboard.
+        {/* Letterboxed/Pillarboxed Video (fixed frame, real video aspect inside) */}
+        {hasVideo && (
+          <div className="mb-10 rounded-lg overflow-hidden">
+            {/* Responsive frame: portrait emphasis on mobile, 16:9 on >= sm */}
+            <div className="relative w-full bg-black aspect-[9/16] sm:aspect-video">
+              <video
+                src={videoUrl}
+                controls
+                className="absolute inset-0 w-full h-full object-contain bg-black"
+                preload="metadata"
+              />
+            </div>
           </div>
         )}
 
         {/* Slider */}
+        {hasImages && (
         <div className="relative">
           {/* Left Arrow */}
           <button
@@ -109,7 +118,7 @@ export default function Testimonials({ testimonialsData }) {
                       alt={`Testimonial ${index + 1}`}
                       width={256}
                       height={256}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-white"
                     />
                   </div>
                 </div>
@@ -117,6 +126,7 @@ export default function Testimonials({ testimonialsData }) {
             })}
           </div>
         </div>
+        )}
       </div>
     </section>
   );

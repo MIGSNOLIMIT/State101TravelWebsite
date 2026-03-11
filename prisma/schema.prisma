@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model TermsOfService {
@@ -36,6 +37,8 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   role       String   @default("editor")
+  loginAttempts Int   @default(0)
+  lockUntil     DateTime?
 }
 
 model Homepage {
@@ -70,6 +73,7 @@ model ServicesPage {
   heroDesc     String?
   sectionTitle String?
   sectionDesc  String?
+  requirementsText String?
   updatedAt    DateTime @updatedAt
 }
 
@@ -87,6 +91,7 @@ model TopBar {
   address String @default("")
   phone   String @default("")
   email   String @default("")
+  hours   String @default("")
 }
 
 model Header {
@@ -101,6 +106,7 @@ model Footer {
   email       String @default("")
   socialLinks String @default("[]")
   logoUrl     String @default("")
+  hours       String @default("")
 }
 
 model Media {
@@ -111,3 +117,49 @@ model Media {
   type        String
   createdAt   DateTime @default(now())
 }
+
+// ===== Application & Chatbot Schema (Phase 1) =====
+
+enum ApplicationStatus {
+  NEW
+  IN_REVIEW
+  DECLINED
+}
+
+model ApplicationEntry {
+  id            String             @id @default(cuid())
+  fullName      String
+  email         String
+  phone         String
+  address       String
+  visaType      String
+  age           Int
+  availableTime String
+  availableDay  String
+  status        ApplicationStatus  @default(NEW)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  files         ApplicationFile[]
+}
+
+model ApplicationFile {
+  id            String           @id @default(cuid())
+  applicationId String
+  fileUrl       String
+  fileType      String
+  createdAt     DateTime         @default(now())
+
+  application   ApplicationEntry @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+}
+
+model KnowledgebaseItem {
+  id        String   @id @default(cuid())
+  title     String
+  category  String
+  content   String
+  updatedAt DateTime @updatedAt
+}
+

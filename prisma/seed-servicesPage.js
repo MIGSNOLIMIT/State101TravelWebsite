@@ -8,6 +8,7 @@ async function main() {
       heroDesc: "This is the default hero description.",
       sectionTitle: "",
       sectionDesc: "",
+      requirementsText: "",
     },
   });
   console.log("Default servicesPage record created.");

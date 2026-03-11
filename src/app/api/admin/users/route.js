@@ -28,6 +28,13 @@ export async function DELETE(req) {
   if (!toRemove) {
     return NextResponse.json({ error: "User not found" }, { status: 400 });
   }
+  // Prevent deleting the last admin
+  if (toRemove.role === "admin") {
+    const adminCount = await prisma.user.count({ where: { role: "admin" } });
+    if (adminCount <= 1) {
+      return NextResponse.json({ error: "Cannot delete the last admin" }, { status: 400 });
+    }
+  }
   await prisma.user.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
@@ -45,13 +52,42 @@ export async function PATCH(req) {
   const body = await req.json();
   const updateData = {};
   if (body.name !== undefined) updateData.name = body.name;
-  // Remove role change for editors
-  // if (body.role && ["admin", "editor"].includes(body.role)) updateData.role = body.role;
+  // Allow email update with uniqueness check
+  if (body.email !== undefined) {
+    const email = String(body.email).trim();
+    // very light validation; frontend performs stricter checks
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing && existing.id !== id) {
+      return NextResponse.json({ error: "Email already exists" }, { status: 400 });
+    }
+    updateData.email = email;
+  }
+  // Role change (admin/editor) with last-admin protection
+  if (body.role !== undefined) {
+    const role = String(body.role);
+    if (!["admin", "editor"].includes(role)) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (target.role === "admin" && role === "editor") {
+      const adminCount = await prisma.user.count({ where: { role: "admin" } });
+      if (adminCount <= 1) {
+        return NextResponse.json({ error: "Cannot demote the last admin" }, { status: 400 });
+      }
+    }
+    updateData.role = role;
+  }
+  // Remove role change for editors (intentionally disabled)
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
-  await prisma.user.update({ where: { id }, data: updateData });
-  return NextResponse.json({ success: true });
+  const updated = await prisma.user.update({ where: { id }, data: updateData });
+  return NextResponse.json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role });
 }
 
 export async function POST(req) {
@@ -61,7 +97,7 @@ export async function POST(req) {
   if (!user || user.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const { name, email, password } = await req.json();
+  const { name, email, password, role } = await req.json();
   if (!email || !password) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
@@ -72,7 +108,7 @@ export async function POST(req) {
   const bcrypt = require("bcryptjs");
   const hashed = await bcrypt.hash(password, 10);
   const created = await prisma.user.create({
-    data: { name, email, password: hashed, role: "editor" },
+    data: { name, email, password: hashed, role: ["admin", "editor"].includes(role) ? role : "editor" },
   });
   return NextResponse.json({ id: created.id, name: created.name, email: created.email, role: created.role });
 }

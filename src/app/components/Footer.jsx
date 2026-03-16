@@ -46,8 +46,64 @@ export default function Footer() {
       }}
     >
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
-        {/* Left Side - Navigation Links */}
+        {/* Left Side - Links */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 flex-1">
+          {/* Contact Us */}
+          { (contact.address || contact.phone || contact.email) && (
+            <div>
+              <h3 className="text-lg font-semibold underline mb-4">Contact Us</h3>
+              <ul className="space-y-3">
+                {contact.address && (
+                  <li className="flex items-start space-x-3">
+                    <MapPinIcon className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                    <span>{contact.address}</span>
+                  </li>
+                )}
+                {contact.phone && (
+                  <li className="flex items-center space-x-2">
+                    <PhoneIcon className="w-5 h-5 text-gray-300" />
+                    <a href={`tel:${contact.phone}`} className="hover:underline">
+                      {contact.phone}
+                    </a>
+                  </li>
+                )}
+                {contact.email && (
+                  <li className="flex items-center space-x-2">
+                    <EnvelopeIcon className="w-5 h-5 text-gray-300" />
+                    <a href={`mailto:${contact.email}`} className="hover:underline">
+                      {contact.email}
+                    </a>
+                  </li>
+                )}
+                {/* Office Hours (static) */}
+                <li className="flex items-center space-x-2">
+                  <span>Office Hours 9AM-5PM</span>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {/* Our Socials */}
+          {socials.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold underline mb-4">Our Socials</h3>
+              <ul className="space-y-3">
+                {socials.map((item, idx) => (
+                  <li key={idx} className="flex items-center space-x-2">
+                    {/* Use icons based on platform */}
+                    {item.platform === "Facebook" && <Facebook className="w-5 h-5 text-gray-300" />}
+                    {item.platform === "Instagram" && <Instagram className="w-5 h-5 text-gray-300" />}
+                    {item.platform === "TikTok" && <FaTiktok className="w-5 h-5 text-gray-300" />}
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      {item.platform}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Navigation Links */}
           <div>
             <h3 className="text-lg font-semibold underline mb-4">Navigation</h3>
             <ul className="space-y-3">
@@ -67,7 +123,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Right Side - Logo */}
+        {/* Right Side - Logo (no link) */}
         <div className="flex-shrink-0">
           {logoUrl && (
             <div className="block">

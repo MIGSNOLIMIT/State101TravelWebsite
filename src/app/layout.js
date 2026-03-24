@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import "./globals.css";
+import AppChrome from "./components/AppChrome";
 import TopBar from "./components/TopBar";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -21,8 +22,6 @@ export const metadata = {
 // Fetch global header/footer data from your new CMS API
 
 export default async function RootLayout({ children }) {
-  
-
   // Fetch directly from Prisma
   const headerData = await prisma.header?.findFirst?.() || null;
   const footerData = await prisma.footer?.findFirst?.() || null;
@@ -30,12 +29,15 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="flex flex-col min-h-screen">
-        <TopBar />
-        <Header data={headerData} />
-        <main className="flex-1">{children}</main>
-        <Footer data={footerData} />
-        <BottomBar />
-        <FloatingChat />
+        <AppChrome
+          topBar={<TopBar />}
+          header={<Header data={headerData} />}
+          footer={<Footer data={footerData} />}
+          bottomBar={<BottomBar />}
+          floatingChat={<FloatingChat />}
+        >
+          {children}
+        </AppChrome>
       </body>
     </html>
   );

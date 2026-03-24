@@ -1,0 +1,16 @@
+ALTER TABLE "Media"
+ADD COLUMN IF NOT EXISTS "altText" TEXT,
+ADD COLUMN IF NOT EXISTS "storagePath" TEXT,
+ADD COLUMN IF NOT EXISTS "folder" TEXT,
+ADD COLUMN IF NOT EXISTS "width" INTEGER,
+ADD COLUMN IF NOT EXISTS "height" INTEGER,
+ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+UPDATE "Media"
+SET "updatedAt" = COALESCE("createdAt", CURRENT_TIMESTAMP)
+WHERE "updatedAt" IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "Media_url_key" ON "Media"("url");
+CREATE UNIQUE INDEX IF NOT EXISTS "Media_storagePath_key" ON "Media"("storagePath");
+CREATE INDEX IF NOT EXISTS "Media_folder_idx" ON "Media"("folder");
+CREATE INDEX IF NOT EXISTS "Media_createdAt_idx" ON "Media"("createdAt");

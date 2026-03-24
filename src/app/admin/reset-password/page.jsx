@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ export default function ResetPassword() {
       const data = await res.json();
       if (res.ok) {
         setMessage("Password reset successful. You may now log in.");
-        setTimeout(() => router.push("/admin/login"), 2000);
+        setTimeout(() => router.push("/admin/portal/manage/state101signin"), 2000);
       } else {
         setMessage(data.error || "Error resetting password.");
       }
@@ -54,22 +55,27 @@ export default function ResetPassword() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-red-600 to-blue-900">
-      <div className="absolute top-40 left-6 z-10">
-        <button
-          onClick={() => router.push("/admin/dashboard")}
-          className="px-4 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition"
-        >
-          ← Back
-        </button>
-      </div>
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-blue-700 mb-4 text-center">
-          Reset Password
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-5">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#123f87] px-5 py-10">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,33,74,0.18)_0%,rgba(10,33,74,0.28)_100%)]" />
+      <div className="relative z-10 w-full max-w-[340px] text-white">
+        <div className="flex flex-col items-center">
+          <div className="rounded-full bg-white p-3 shadow-[0_20px_40px_rgba(8,20,48,0.28)]">
+            <Image
+              src="/images/logo.png"
+              alt="State101 Logo"
+              width={160}
+              height={160}
+              className="rounded-full bg-white object-contain"
+            />
+          </div>
+          <h1 className="mt-8 text-center text-[38px] font-semibold tracking-[-0.02em] text-white md:text-[42px]">
+            Reset Password
+          </h1>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-9 space-y-5">
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="mb-1 block text-sm font-medium text-white">
               New Password
             </label>
             <input
@@ -77,12 +83,12 @@ export default function ResetPassword() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="w-full rounded-md border border-white/80 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/60"
               placeholder="Enter new password"
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="mb-1 block text-sm font-medium text-white">
               Confirm Password
             </label>
             <input
@@ -90,20 +96,20 @@ export default function ResetPassword() {
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full rounded-md border border-white/80 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/60"
               placeholder="Confirm new password"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 rounded bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold hover:from-blue-700 hover:to-red-700 transition"
+            className="w-full rounded-md border-2 border-white bg-[#0c214d] py-3 text-base font-semibold text-white transition hover:bg-[#081735] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>
         </form>
         {message && (
-          <div className="mt-4 text-center text-blue-600">{message}</div>
+          <div className="mt-4 text-center text-sm text-white/90">{message}</div>
         )}
       </div>
     </main>

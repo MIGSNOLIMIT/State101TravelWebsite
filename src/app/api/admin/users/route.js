@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
 // Only admins can access user management
 export async function GET() {
@@ -55,10 +56,9 @@ export async function PATCH(req) {
   // Allow email update with uniqueness check
   if (body.email !== undefined) {
     const email = String(body.email).trim();
-    // very light validation; frontend performs stricter checks
-    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    const emailError = validateApplicationStyleEmail(email);
+    if (emailError) {
+      return NextResponse.json({ error: emailError }, { status: 400 });
     }
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing && existing.id !== id) {
@@ -100,6 +100,10 @@ export async function POST(req) {
   const { name, email, password, role } = await req.json();
   if (!email || !password) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  const emailError = validateApplicationStyleEmail(email);
+  if (emailError) {
+    return NextResponse.json({ error: emailError }, { status: 400 });
   }
   const exists = await prisma.user.findUnique({ where: { email } });
   if (exists) {

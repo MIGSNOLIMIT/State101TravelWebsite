@@ -113,9 +113,15 @@ model Media {
   id          Int      @id @default(autoincrement())
   name        String
   description String?
-  url         String
+  altText     String?
+  url         String   @unique
+  storagePath String?  @unique
+  folder      String?
   type        String
+  width       Int?
+  height      Int?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ===== Application & Chatbot Schema (Phase 1) =====
@@ -123,6 +129,7 @@ model Media {
 enum ApplicationStatus {
   NEW
   IN_REVIEW
+  APPROVED
   DECLINED
 }
 
@@ -161,5 +168,16 @@ model KnowledgebaseItem {
   category  String
   content   String
   updatedAt DateTime @updatedAt
+}
+
+model WebsiteView {
+  id        String   @id @default(cuid())
+  visitorId String
+  path      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+  @@index([visitorId])
 }
 

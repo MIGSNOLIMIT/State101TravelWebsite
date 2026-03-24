@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateApplicationStyleEmail } from "@/lib/email-validation";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -102,10 +103,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    // Strict email validation (RFC 5322 Official Standard)
-    const emailRegex =
-      /^(?=.{1,64}@)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-    if (!emailRegex.test(email)) {
+    if (validateApplicationStyleEmail(email)) {
       return NextResponse.json({ success: false, error: "Invalid email address" }, { status: 400 });
     }
     // Strict Philippine mobile validation

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -38,26 +39,27 @@ export default function AdminLogin() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#00008b] via-red-600 to-[#00008b]">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-        <div className="flex flex-col items-center mb-6">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#123f87] px-5 py-10">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,33,74,0.18)_0%,rgba(10,33,74,0.28)_100%)]" />
+      <div className="relative z-10 w-full max-w-[340px] text-white">
+        <div className="flex flex-col items-center">
+          <div className="rounded-full bg-white p-3 shadow-[0_20px_40px_rgba(8,20,48,0.28)]">
           <Image
-            src="/images/state101-logo.png"
+            src="/images/logo.png"
             alt="State101 Logo"
-            width={120}
-            height={120}
-            className="mb-2 rounded-full border-4 border-[#00008b] bg-white"
+            width={160}
+            height={160}
+            className="rounded-full bg-white object-contain"
           />
-          <h1 className="text-2xl font-bold text-[#00008b] mb-1">
+          </div>
+          <h1 className="mt-8 text-center text-[38px] font-semibold tracking-[-0.02em] text-white md:text-[42px]">
             Admin Login
           </h1>
-          <p className="text-sm text-gray-500">
-            Sign in to manage website content
-          </p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-5">
+
+        <form onSubmit={handleSubmit} className="mt-9 space-y-5">
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="mb-1 block text-sm font-medium text-white">
               Email
             </label>
             <input
@@ -65,12 +67,12 @@ export default function AdminLogin() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#00008b] bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300"
+              className="w-full rounded-md border border-white/80 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/60"
               placeholder="your@email.com"
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="mb-1 block text-sm font-medium text-white">
               Password
             </label>
             <div className="relative">
@@ -79,13 +81,13 @@ export default function AdminLogin() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-red-600 bg-white text-gray-900 placeholder-gray-400 dark:bg-gray-900 dark:text-white dark:placeholder-gray-300 pr-10"
+                className="w-full rounded-md border border-white/80 bg-white px-4 py-3 pr-10 text-sm text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/60"
                 placeholder="Enter your password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00008b] focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#123f87] focus:outline-none"
                 tabIndex={-1}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
@@ -105,24 +107,24 @@ export default function AdminLogin() {
             </div>
           </div>
           {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
+            <div className="text-center text-sm text-[#ffd3d3]">{error}</div>
           )}
+          <div className="flex justify-end">
+            <Link
+              href="/admin/forgot-password"
+              className="text-sm font-semibold text-white transition hover:text-white/80"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 rounded bg-gradient-to-r from-[#00008b] to-red-600 text-white font-bold hover:from-[#000070] hover:to-red-700 transition"
+            className="w-full rounded-md border-2 border-white bg-[#0c214d] py-3 text-base font-semibold text-white transition hover:bg-[#081735] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Signing in..." : "Login"}
           </button>
         </form>
-        <div className="mt-4 text-center">
-          <a
-            href="/admin/forgot-password"
-            className="text-[#00008b] hover:underline text-sm"
-          >
-            Forgot password?
-          </a>
-        </div>
       </div>
     </main>
   );

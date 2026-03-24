@@ -17,7 +17,7 @@ function supabaseClient() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-async function requireEditor(reqRoleCheck = (role) => ["admin", "editor"].includes(role)) {
+async function requireRole(reqRoleCheck = (role) => role === "admin") {
   const session = await getAdminSession();
   if (!session) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   const me = await prisma.user.findUnique({ where: { id: session.userId } });
@@ -27,7 +27,7 @@ async function requireEditor(reqRoleCheck = (role) => ["admin", "editor"].includ
 
 export async function GET(_req, { params }) {
   try {
-    const gate = await requireEditor();
+    const gate = await requireRole();
     if (gate.error) return gate.error;
     const id = params?.id;
     const entry = await prisma.applicationEntry.findUnique({ where: { id }, include: { files: true } });
@@ -41,12 +41,12 @@ export async function GET(_req, { params }) {
 
 export async function PATCH(req, { params }) {
   try {
-    const gate = await requireEditor();
+    const gate = await requireRole();
     if (gate.error) return gate.error;
     const id = params?.id;
     const body = await req.json();
     const { status } = body || {};
-    if (!status || !["NEW", "IN_REVIEW", "DECLINED"].includes(status)) {
+    if (!status || !["NEW", "IN_REVIEW", "APPROVED", "DECLINED"].includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
     const updated = await prisma.applicationEntry.update({ where: { id }, data: { status } });
@@ -59,7 +59,7 @@ export async function PATCH(req, { params }) {
 
 export async function DELETE(_req, { params }) {
   try {
-    const gate = await requireEditor((role) => role === "admin");
+    const gate = await requireRole();
     if (gate.error) return gate.error;
     const id = params?.id;
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

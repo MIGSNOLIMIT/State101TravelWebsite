@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireAdminEditor } from "@/lib/admin-media";
-import { createStoragePath, inferAltText, normalizeFolderInput, validateFileDescriptor } from "@/lib/media";
+import {
+  createStoragePath,
+  inferAltText,
+  normalizeFolderInput,
+  validateFileAgainstAccept,
+  validateFileDescriptor,
+} from "@/lib/media";
 import { getStorageBucketName, getStorageClient } from "@/lib/supabase-storage";
 
 export const runtime = "nodejs";
@@ -16,6 +22,7 @@ export async function POST(req) {
     const body = await req.json();
     const files = Array.isArray(body?.files) ? body.files : [];
     const folder = normalizeFolderInput(body?.folder || "general");
+    const accept = typeof body?.accept === "string" ? body.accept : "";
     const supabase = getStorageClient();
     const bucket = getStorageBucketName();
 
@@ -25,6 +32,11 @@ export async function POST(req) {
 
     const uploads = [];
     for (const file of files) {
+      const acceptError = validateFileAgainstAccept(file, accept);
+      if (acceptError) {
+        return NextResponse.json({ error: `${file.name}: ${acceptError}` }, { status: 400 });
+      }
+
       const error = validateFileDescriptor(file);
       if (error) {
         return NextResponse.json({ error: `${file.name}: ${error}` }, { status: 400 });
@@ -44,6 +56,7 @@ export async function POST(req) {
         height: file.height ?? null,
         altText: file.altText || inferAltText(file.name),
         folder,
+        accept,
         storagePath,
         token: signed.data.token,
       });

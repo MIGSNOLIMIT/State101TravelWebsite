@@ -1,9 +1,34 @@
 "use client";
 
-import { Save } from "lucide-react";
+import { Eye, EyeOff, Save } from "lucide-react";
 import { useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
+
+function PasswordField({ label, value, onChange, placeholder, visible, onToggle }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">{label}</span>
+      <div className="relative">
+        <input
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 pr-12 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-[#164896]"
+          aria-label={visible ? `Hide ${label}` : `Show ${label}`}
+        >
+          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+    </label>
+  );
+}
 
 export default function ProfileClient({ initialProfile }) {
   const [name, setName] = useState(initialProfile.name || "");
@@ -14,6 +39,9 @@ export default function ProfileClient({ initialProfile }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isAdmin = initialProfile.role === "admin";
 
@@ -114,38 +142,32 @@ export default function ProfileClient({ initialProfile }) {
           </div>
 
           <div className="space-y-5 px-6 py-6">
-            <label className="block">
-              <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Current Password</span>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-                className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                placeholder="********"
-              />
-            </label>
+            <PasswordField
+              label="Current Password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              placeholder="********"
+              visible={showCurrentPassword}
+              onToggle={() => setShowCurrentPassword((prev) => !prev)}
+            />
 
-            <label className="block">
-              <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">New Password</span>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                placeholder="Enter new password"
-              />
-            </label>
+            <PasswordField
+              label="New Password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              placeholder="Enter new password"
+              visible={showNewPassword}
+              onToggle={() => setShowNewPassword((prev) => !prev)}
+            />
 
-            <label className="block">
-              <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Confirm New Password</span>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                placeholder="Confirm new password"
-              />
-            </label>
+            <PasswordField
+              label="Confirm New Password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              placeholder="Confirm new password"
+              visible={showConfirmPassword}
+              onToggle={() => setShowConfirmPassword((prev) => !prev)}
+            />
           </div>
 
           <div className="flex justify-end px-6 pb-6">

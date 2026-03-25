@@ -25,7 +25,7 @@ export default function ServicesHero({ bannerSrc, title, description }) {
 
       {/* Text: render only when provided by CMS */}
       {(title || description) && (
-        <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8 text-white max-w-lg">
+        <div className="absolute bottom-4 left-4 right-4 text-white md:bottom-8 md:left-8 md:right-auto md:max-w-lg">
           {title && <h1 className="text-3xl md:text-5xl font-bold mb-2">{title}</h1>}
           {description && <p className="text-sm md:text-lg">{description}</p>}
         </div>

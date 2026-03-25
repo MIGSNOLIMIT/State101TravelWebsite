@@ -1,42 +1,30 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 
 import { useState, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
+import {
+  APPLICATION_FILE_ACCEPT,
+  APPLICATION_FILE_NOTE,
+  APPLICATION_SUCCESS_MESSAGE,
+  validateApplicationUploadFile,
+} from "@/lib/application-files";
 
 
 export default function ApplicationFormPage({ searchParams }) {
-  const submitted = searchParams?.submitted === "1";
   const errorParam = searchParams?.error;
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(errorParam || "");
   const formRef = useRef();
 
-  // Supabase client for uploads
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const bucket = process.env.SUPABASE_APPLICATION_BUCKET;
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/jpg",
-    "image/heic",
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  ];
-
   function handleFileChange(e) {
     setError("");
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files || []);
     for (const file of files) {
-      if (!allowedTypes.includes(file.type)) {
-        setError("Only JPG, PNG, HEIC, PDF, DOC, and DOCX files are allowed.");
+      const fileError = validateApplicationUploadFile(file);
+      if (fileError) {
+        setError(`${file.name}: ${fileError}`);
         e.target.value = "";
         return;
       }
@@ -49,45 +37,22 @@ export default function ApplicationFormPage({ searchParams }) {
     setError("");
     setSuccess(false);
     const form = formRef.current;
-    const data = new FormData(form);
-    // Collect fields
-    const fields = {
-      fullName: data.get("fullName"),
-      email: data.get("email"),
-      phone: data.get("phone"),
-      address: data.get("address"),
-      visaType: data.get("visaType"),
-      age: data.get("age"),
-      availableTime: data.get("availableTime"),
-      availableDay: data.get("availableDay"),
-    };
-    // Upload files to Supabase
-    const files = data.getAll("files");
-    const uploadedFiles = [];
+    const formData = new FormData(form);
+    const files = formData.getAll("files");
     for (const file of files) {
-      if (!file || file.size === 0) continue;
-      if (!allowedTypes.includes(file.type)) {
-        setError("Only JPG, PNG, HEIC, PDF, DOC, and DOCX files are allowed.");
+      if (!file || typeof file.size !== "number" || file.size === 0) continue;
+      const fileError = validateApplicationUploadFile(file);
+      if (fileError) {
+        setError(`${file.name}: ${fileError}`);
         setSubmitting(false);
         return;
       }
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const path = `applications/${Date.now()}_${safeName}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
-      if (uploadError) {
-        setError("File upload failed: " + uploadError.message);
-        setSubmitting(false);
-        return;
-      }
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-      uploadedFiles.push({ url: urlData.publicUrl, name: file.name, type: file.type });
     }
-    // Submit metadata to backend
+
     try {
       const res = await fetch("/api/application/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fields, files: uploadedFiles }),
+        body: formData,
       });
       if (res.ok) {
         setSuccess(true);
@@ -112,7 +77,7 @@ export default function ApplicationFormPage({ searchParams }) {
           </div>
           {success && (
             <div className="mb-6 rounded bg-green-100 text-green-800 px-4 py-3">
-              Thank you! Your application has been submitted.
+              {APPLICATION_SUCCESS_MESSAGE}
             </div>
           )}
           {error && (
@@ -126,7 +91,16 @@ export default function ApplicationFormPage({ searchParams }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" name="email" required className="mt-1 w-full rounded border px-3 py-2" placeholder="you@example.com" maxLength={254} />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  className="mt-1 w-full rounded border px-3 py-2"
+                  placeholder="you@example.com"
+                  pattern="^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,24}$"
+                  title="Please enter a valid email address with a complete domain."
+                  maxLength={254}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Phone</label>
@@ -167,11 +141,11 @@ export default function ApplicationFormPage({ searchParams }) {
                 type="file"
                 name="files"
                 multiple
-                accept=".jpg,.jpeg,.png,.heic,.pdf,.doc,.docx"
+                accept={APPLICATION_FILE_ACCEPT}
                 onChange={handleFileChange}
                 className="mt-1 block w-full text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white hover:file:bg-blue-700"
               />
-              <p className="text-xs text-gray-600 mt-1">Allowed formats: JPG, PNG, HEIC, PDF, DOC, DOCX. Max 50MB per file.</p>
+              <p className="mt-1 text-xs text-gray-600">{APPLICATION_FILE_NOTE}</p>
             </div>
             <button type="submit" disabled={submitting} className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold px-6 py-2 rounded hover:from-blue-700 hover:to-red-700 disabled:opacity-60">
               {submitting ? "Submitting…" : "Submit Application"}

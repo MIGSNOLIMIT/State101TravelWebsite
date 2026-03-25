@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminEditor } from "@/lib/admin-media";
-import { createPublicMediaUrl, inferAltText, inferMediaTypeFromName } from "@/lib/media";
+import {
+  createPublicMediaUrl,
+  inferAltText,
+  inferMediaTypeFromName,
+  validateFileAgainstAccept,
+  validateFileDescriptor,
+} from "@/lib/media";
 import { getStorageBucketName, getStorageClient } from "@/lib/supabase-storage";
 
 export const runtime = "nodejs";
@@ -25,6 +31,16 @@ export async function POST(req) {
 
     const items = [];
     for (const upload of uploads) {
+      const acceptError = validateFileAgainstAccept(upload, upload.accept || "");
+      if (acceptError) {
+        return NextResponse.json({ error: `${upload.name}: ${acceptError}` }, { status: 400 });
+      }
+
+      const validationError = validateFileDescriptor(upload);
+      if (validationError) {
+        return NextResponse.json({ error: `${upload.name}: ${validationError}` }, { status: 400 });
+      }
+
       const url = createPublicMediaUrl(supabase, bucket, upload.storagePath);
       const record = await prisma.media.upsert({
         where: { url },

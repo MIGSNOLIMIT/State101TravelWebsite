@@ -151,7 +151,7 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
               <AdminEditorStrip title={`TOS Page Logo ${index + 1}`} className={index === 0 ? "border-t-0" : ""} />
               <div className="space-y-5 px-5 py-6 md:px-6">
                 <div>
-                  <AdminEditorLabel>Select a Logo</AdminEditorLabel>
+                  <AdminEditorLabel className="pt-2">Select a Logo</AdminEditorLabel>
                   <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
                     <MediaLibraryPicker
                       multiple={false}
@@ -163,13 +163,13 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
                   </div>
                 </div>
                 <div>
-                  <AdminEditorLabel>Selected Logo</AdminEditorLabel>
+                  <AdminEditorLabel className="pt-2">Selected Logo</AdminEditorLabel>
                   <div className="mt-3 rounded-md border border-[#c7d5eb] bg-white px-4 py-3 dark:border-[#4d6f9f] dark:bg-slate-900">
                     <Image src={logos[index] || PLACEHOLDER} alt={names[index] || `Logo ${index + 1}`} width={120} height={90} className="object-contain" />
                   </div>
                 </div>
                 <div>
-                  <AdminEditorLabel>Logo Name</AdminEditorLabel>
+                  <AdminEditorLabel className="pt-2">Logo Name</AdminEditorLabel>
                   <input type="text" value={names[index] || ""} onChange={(event) => handleLogoChange(index, "name", event.target.value)} className={adminEditorInputClass} placeholder="Logo name (optional)" />
                 </div>
               </div>

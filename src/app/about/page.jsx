@@ -21,11 +21,10 @@ async function fetchAboutPage() {
 export default async function AboutPage() {
   const aboutData = await fetchAboutPage();
   const heroSrc = aboutData?.heroImageUrl || undefined;
-  console.log("AboutPage heroSrc:", heroSrc);
   return (
     <main className="bg-white">
-      <HeroBanner bannerSrc={heroSrc} />
-      <OurStory />
+      <HeroBanner bannerSrc={heroSrc} description={aboutData?.heroDescription || ""} />
+      <OurStory content={aboutData?.storyContent || ""} />
     </main>
   );
 }

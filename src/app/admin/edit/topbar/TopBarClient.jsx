@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { AdminEditorCard, AdminEditorLabel, adminEditorInputClass } from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
 export default function TopBarClient({ initialUserName, initialRole }) {
   const [address, setAddress] = useState("");
@@ -61,7 +62,8 @@ export default function TopBarClient({ initialUserName, initialRole }) {
       if (res.ok) {
         setMessage("Top bar updated!");
       } else {
-        setMessage("Error saving changes.");
+        const error = await res.json().catch(() => ({}));
+        setMessage(error?.error || "Error saving changes.");
       }
     } finally {
       setPendingSave(false);
@@ -74,6 +76,13 @@ export default function TopBarClient({ initialUserName, initialRole }) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
+
+    const emailError = email.trim() ? validateApplicationStyleEmail(email) : "";
+    if (emailError) {
+      setMessage(emailError);
+      setSaving(false);
+      return;
+    }
 
     const anyEmpty = !address.trim() || !phone.trim() || !email.trim();
     if (anyEmpty) {
@@ -122,6 +131,9 @@ export default function TopBarClient({ initialUserName, initialRole }) {
                     onChange={(event) => setEmail(event.target.value)}
                     className={adminEditorInputClass}
                     placeholder="Enter email address"
+                    pattern="^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,24}$"
+                    title="Enter a valid email address with a complete domain."
+                    maxLength={254}
                   />
                 </div>
               </div>

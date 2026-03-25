@@ -129,3 +129,25 @@ export function validateFileDescriptor(file) {
 export function createPublicMediaUrl(supabaseClient, bucket, storagePath) {
   return supabaseClient.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl;
 }
+
+export function getAcceptDescription(accept = "") {
+  if (accept === "image/*") {
+    return `Images only. Up to ${Math.floor(MEDIA_MAX_IMAGE_SIZE / (1024 * 1024))}MB each.`;
+  }
+  if (accept === "video/*") {
+    return `Videos only. Up to ${Math.floor(MEDIA_MAX_VIDEO_SIZE / (1024 * 1024))}MB each.`;
+  }
+  return `Images up to ${Math.floor(MEDIA_MAX_IMAGE_SIZE / (1024 * 1024))}MB and videos up to ${Math.floor(MEDIA_MAX_VIDEO_SIZE / (1024 * 1024))}MB.`;
+}
+
+export function validateFileAgainstAccept(file, accept = "") {
+  if (!accept) return "";
+  const type = file?.type || inferMediaTypeFromName(file?.name);
+  if (accept === "image/*" && !isImageType(type)) {
+    return "Only image files can be uploaded here.";
+  }
+  if (accept === "video/*" && !isVideoType(type)) {
+    return "Only video files can be uploaded here.";
+  }
+  return "";
+}

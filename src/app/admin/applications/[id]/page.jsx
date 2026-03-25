@@ -14,12 +14,12 @@ export default async function ApplicationDetailPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { role: true },
+    select: { name: true, email: true, role: true },
   });
 
   if (!user || user.role !== "admin") {
     redirect("/access-denied");
   }
 
-  return <ApplicationDetailClient />;
+  return <ApplicationDetailClient initialUserName={user.name || user.email || "Admin User"} initialRole={user.role} />;
 }

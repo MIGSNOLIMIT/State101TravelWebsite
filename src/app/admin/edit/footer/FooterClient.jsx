@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { AdminEditorCard, AdminEditorLabel, AdminEditorStrip, adminEditorInputClass } from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
 const SOCIAL_PLATFORMS = ["Facebook", "Instagram", "TikTok"];
 
@@ -12,6 +13,7 @@ export default function FooterClient({ initialUserName, initialRole }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [hours, setHours] = useState("");
   const [socialLinks, setSocialLinks] = useState([
     { platform: "Facebook", url: "" },
     { platform: "Instagram", url: "" },
@@ -37,6 +39,7 @@ export default function FooterClient({ initialUserName, initialRole }) {
         setPhone(json.phone || "");
         setEmail(json.email || "");
         setAddress(json.address || "");
+        setHours(json.hours || "");
 
         let links = [];
         try {
@@ -74,9 +77,14 @@ export default function FooterClient({ initialUserName, initialRole }) {
       const res = await fetch("/api/admin/footer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, email, address, socialLinks }),
+        body: JSON.stringify({ phone, email, address, hours, socialLinks }),
       });
-      setMessage(res.ok ? "Footer updated!" : "Error saving changes.");
+      if (res.ok) {
+        setMessage("Footer updated!");
+      } else {
+        const error = await res.json().catch(() => ({}));
+        setMessage(error?.error || "Error saving changes.");
+      }
     } finally {
       setPendingSave(false);
       setSaving(false);
@@ -89,7 +97,14 @@ export default function FooterClient({ initialUserName, initialRole }) {
     setSaving(true);
     setMessage("");
 
-    const anyEmpty = !phone.trim() || !email.trim() || !address.trim() || socialLinks.some((link) => !link.url.trim());
+    const emailError = email.trim() ? validateApplicationStyleEmail(email) : "";
+    if (emailError) {
+      setMessage(emailError);
+      setSaving(false);
+      return;
+    }
+
+    const anyEmpty = !phone.trim() || !email.trim() || !address.trim() || !hours.trim() || socialLinks.some((link) => !link.url.trim());
     if (anyEmpty) {
       setConfirmOpen(true);
       return;
@@ -119,8 +134,21 @@ export default function FooterClient({ initialUserName, initialRole }) {
                   </div>
                   <div>
                     <AdminEditorLabel>Edit Email</AdminEditorLabel>
-                    <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className={adminEditorInputClass} placeholder="Enter email address" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className={adminEditorInputClass}
+                      placeholder="Enter email address"
+                      pattern="^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,24}$"
+                      title="Enter a valid email address with a complete domain."
+                      maxLength={254}
+                    />
                   </div>
+                </div>
+                <div>
+                  <AdminEditorLabel>Edit Available Hours</AdminEditorLabel>
+                  <input type="text" value={hours} onChange={(event) => setHours(event.target.value)} className={adminEditorInputClass} placeholder="e.g. Monday to Saturday, 9AM to 5PM" />
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { Eye, EyeOff, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
@@ -22,6 +22,7 @@ export default function UsersClient({ initialUserName, initialRole }) {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState(initialEditForm);
   const [saving, setSaving] = useState(false);
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -188,14 +189,24 @@ export default function UsersClient({ initialUserName, initialRole }) {
 
               <label className="block">
                 <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Password</span>
-                <input
-                  type="password"
-                  value={newUser.password}
-                  onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
-                  className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                  placeholder="Enter new password"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showNewUserPassword ? "text" : "password"}
+                    value={newUser.password}
+                    onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
+                    className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 pr-12 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
+                    placeholder="Enter new password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewUserPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-[#164896]"
+                    aria-label={showNewUserPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewUserPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </label>
 
               <label className="block">

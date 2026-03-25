@@ -1,21 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
-import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
-
-function requiredEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env ${name}`);
-  return v;
-}
-
-function supabaseClient() {
-  const url = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const key = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
-  return createClient(url, key, { auth: { persistSession: false } });
-}
 
 async function requireRole(reqRoleCheck = (role) => role === "admin") {
   const session = await getAdminSession();
@@ -45,7 +32,16 @@ export async function PATCH(req, { params }) {
     if (gate.error) return gate.error;
     const id = params?.id;
     const body = await req.json();
-    const { status } = body || {};
+    const { status, archived } = body || {};
+
+    if (typeof archived === "boolean") {
+      const updated = await prisma.applicationEntry.update({
+        where: { id },
+        data: { archivedAt: archived ? new Date() : null },
+      });
+      return NextResponse.json(updated);
+    }
+
     if (!status || !["NEW", "IN_REVIEW", "APPROVED", "DECLINED"].includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
@@ -64,30 +60,12 @@ export async function DELETE(_req, { params }) {
     const id = params?.id;
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-    const files = await prisma.applicationFile.findMany({ where: { applicationId: id } });
+    const updated = await prisma.applicationEntry.update({
+      where: { id },
+      data: { archivedAt: new Date() },
+    });
 
-    await prisma.applicationEntry.delete({ where: { id } });
-
-    const bucket = process.env.SUPABASE_APPLICATION_BUCKET;
-    if (bucket && files.length) {
-      try {
-        const sb = supabaseClient();
-        const paths = files
-          .map((f) => {
-            const m = f.fileUrl.match(/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
-            return m ? m[1] : null;
-          })
-          .filter(Boolean);
-        if (paths.length) {
-          const { error } = await sb.storage.from(bucket).remove(paths);
-          if (error) console.warn("Supabase remove error", error);
-        }
-      } catch (e) {
-        console.warn("Storage delete skipped", e);
-      }
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, item: updated });
   } catch (e) {
     console.error("application delete error", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

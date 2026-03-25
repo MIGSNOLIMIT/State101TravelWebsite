@@ -39,7 +39,7 @@ export async function GET(req) {
 
     const [applications, websiteViews, allApplications, allWebsiteViews] = await Promise.all([
       prisma.applicationEntry.findMany({
-        where: { createdAt: { gte: start, lt: end } },
+        where: { createdAt: { gte: start, lt: end }, archivedAt: null },
         select: { createdAt: true, updatedAt: true, status: true, visaType: true },
         orderBy: { createdAt: "asc" },
       }),
@@ -48,7 +48,7 @@ export async function GET(req) {
         select: { path: true, visitorId: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       }),
-      prisma.applicationEntry.findMany({ select: { createdAt: true } }),
+      prisma.applicationEntry.findMany({ where: { archivedAt: null }, select: { createdAt: true } }),
       prisma.websiteView.findMany({ select: { createdAt: true } }),
     ]);
 

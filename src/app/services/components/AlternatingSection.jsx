@@ -19,22 +19,22 @@ export default function AlternatingSection({
 
   return (
     <section className={`${bgClass} py-16`}>
-      <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center md:gap-12">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-8 px-4 sm:px-6 md:flex-row md:gap-12">
         {/* Swap layout: first section image right */}
         {reverse ? (
           <>
             {/* Text Left */}
-            <div className="md:w-1/2 flex flex-col justify-center text-center md:text-left order-1 md:order-1">
+            <div className="order-1 flex w-full flex-col justify-center text-center md:order-1 md:w-1/2 md:text-left">
               <h2 className="text-2xl md:text-3xl font-bold mb-2">{header}</h2>
               {/* Responsive Colored Line */}
-              <div className={`h-1 w-48 sm:w-64 md:w-80 lg:w-135 ${lineClass} mb-4 rounded`}></div>
+              <div className={`mb-4 h-1 w-40 rounded sm:w-56 md:w-72 lg:w-[30rem] ${lineClass}`}></div>
               <p className="text-gray-700 mb-6">{description}</p>
               <div className="flex justify-center md:justify-start">
                 <a
                   href="https://state101travel-ai-chatbot.streamlit.app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`${btnClass} text-white px-10 py-3 rounded flex items-center justify-center`}
+                  className={`${btnClass} flex w-full items-center justify-center rounded px-8 py-3 text-white sm:w-auto sm:px-10`}
                 >
                   Inquire Now
                 </a>
@@ -42,41 +42,41 @@ export default function AlternatingSection({
             </div>
 
             {/* Image Right */}
-            <div className="md:w-1/2 mb-6 md:mb-0 order-2 md:order-2">
+            <div className="order-2 mb-2 w-full md:order-2 md:mb-0 md:w-1/2">
               <Image
                 src={imageSrc}
                 alt={header}
                 width={600}
                 height={400}
-                className="rounded-lg object-cover w-full h-full"
+                className="mx-auto h-auto max-h-[420px] w-full max-w-[560px] rounded-lg object-contain md:object-cover"
               />
             </div>
           </>
         ) : (
           <>
             {/* Image Left */}
-            <div className="md:w-1/2 mb-6 md:mb-0 order-1 md:order-1">
+            <div className="order-1 mb-2 w-full md:order-1 md:mb-0 md:w-1/2">
               <Image
                 src={imageSrc}
                 alt={header}
                 width={600}
                 height={400}
-                className="rounded-lg object-cover w-full h-full"
+                className="mx-auto h-auto max-h-[420px] w-full max-w-[560px] rounded-lg object-contain md:object-cover"
               />
             </div>
 
             {/* Text Right */}
-            <div className="md:w-1/2 flex flex-col justify-center text-center md:text-left order-2 md:order-2">
+            <div className="order-2 flex w-full flex-col justify-center text-center md:order-2 md:w-1/2 md:text-left">
               <h2 className="text-2xl md:text-3xl font-bold mb-2">{header}</h2>
               {/* Responsive Colored Line */}
-              <div className={`h-1 w-48 sm:w-64 md:w-80 lg:w-135 ${lineClass} mb-4 rounded`}></div>
+              <div className={`mb-4 h-1 w-40 rounded sm:w-56 md:w-72 lg:w-[30rem] ${lineClass}`}></div>
               <p className="text-gray-700 mb-6">{description}</p>
               <div className="flex justify-center md:justify-start">
                 <a
                   href="https://state101travel-ai-chatbot.streamlit.app/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`${btnClass} text-white px-10 py-3 rounded flex items-center justify-center`}
+                  className={`${btnClass} flex w-full items-center justify-center rounded px-8 py-3 text-white sm:w-auto sm:px-10`}
                 >
                   Inquire Now
                 </a>

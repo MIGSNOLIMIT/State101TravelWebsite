@@ -50,17 +50,9 @@ const cardToneClasses = {
 
 const chartColors = {
 	applications: "#0f1f77",
-	approved: "#1f8a33",
-	rejected: "#b30c0c",
 };
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-const LINE_SERIES = [
-	{ key: "applications", label: "Applications", color: chartColors.applications },
-	{ key: "approved", label: "Approved", color: chartColors.approved },
-	{ key: "rejected", label: "Rejected", color: chartColors.rejected },
-];
 
 function startOfWeek(date) {
 	const value = new Date(date);
@@ -133,38 +125,68 @@ function buildSeries(items, mode) {
 			return createdAt >= point.start && createdAt < point.end;
 		}).length;
 
-		const approved = items.filter((item) => {
-			if (item.status !== "APPROVED") return false;
-			const updatedAt = new Date(item.updatedAt || item.createdAt);
-			return updatedAt >= point.start && updatedAt < point.end;
-		}).length;
-
-		const rejected = items.filter((item) => {
-			if (item.status !== "DECLINED") return false;
-			const updatedAt = new Date(item.updatedAt || item.createdAt);
-			return updatedAt >= point.start && updatedAt < point.end;
-		}).length;
-
 		return {
 			...point,
 			applications,
-			approved,
-			rejected,
 		};
 	});
+}
+
+function getNiceChartScale(maxValue, desiredSteps = 5) {
+	if (maxValue <= 0) {
+		return {
+			chartMax: desiredSteps,
+			chartSteps: Array.from({ length: desiredSteps + 1 }, (_, index) => desiredSteps - index),
+		};
+	}
+
+	const roughStep = maxValue / desiredSteps;
+	const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+	const normalizedStep = roughStep / magnitude;
+
+	let niceStep = magnitude;
+	if (normalizedStep > 5) {
+		niceStep = 10 * magnitude;
+	} else if (normalizedStep > 2) {
+		niceStep = 5 * magnitude;
+	} else if (normalizedStep > 1) {
+		niceStep = 2 * magnitude;
+	}
+
+	const chartMax = Math.max(niceStep, Math.ceil(maxValue / niceStep) * niceStep);
+	const stepsCount = Math.max(1, Math.ceil(chartMax / niceStep));
+	const chartSteps = Array.from({ length: stepsCount + 1 }, (_, index) => chartMax - niceStep * index);
+
+	return { chartMax, chartSteps };
+}
+
+function getChartPointPosition(index, total, chartWidth) {
+	if (total <= 1) {
+		return chartWidth / 2;
+	}
+
+	return (index / (total - 1)) * chartWidth;
+}
+
+function getChartY(value, chartHeight, chartMax) {
+	if (!chartMax) {
+		return chartHeight;
+	}
+
+	return chartHeight - (value / chartMax) * chartHeight;
 }
 
 function buildLinePath(values, chartWidth, chartHeight, chartMax) {
 	if (!values.length) return "";
 	if (values.length === 1) {
-		const y = chartHeight - (values[0] / chartMax) * chartHeight;
+		const y = getChartY(values[0], chartHeight, chartMax);
 		return `M ${chartWidth / 2} ${y}`;
 	}
 
 	return values
 		.map((value, index) => {
-			const x = (index / (values.length - 1)) * chartWidth;
-			const y = chartHeight - (value / chartMax) * chartHeight;
+			const x = getChartPointPosition(index, values.length, chartWidth);
+			const y = getChartY(value, chartHeight, chartMax);
 			return `${index === 0 ? "M" : "L"} ${x} ${y}`;
 		})
 		.join(" ");
@@ -243,11 +265,18 @@ export default function DashboardClient({ initialUserName, initialRole }) {
 	);
 
 	const chartData = useMemo(() => buildSeries(applications, rangeMode), [applications, rangeMode]);
-	const rawChartMax = Math.max(0, ...chartData.flatMap((point) => [point.applications, point.approved, point.rejected]));
-	const chartMax = Math.max(5, Math.ceil(rawChartMax / 5) * 5 || 5);
-	const chartSteps = Array.from({ length: 6 }, (_, index) => chartMax - (chartMax / 5) * index);
-	const chartWidth = 860;
-	const chartHeight = 250;
+	const rawChartMax = Math.max(0, ...chartData.map((point) => point.applications));
+	const { chartMax, chartSteps } = useMemo(() => getNiceChartScale(rawChartMax), [rawChartMax]);
+	const plotWidth = 860;
+	const plotHeight = 250;
+	const svgWidth = 940;
+	const svgHeight = 320;
+	const chartPadding = {
+		top: 18,
+		right: 18,
+		bottom: 52,
+		left: 62,
+	};
 
 	return (
 		<AdminShell title="Dashboard" userName={initialUserName} role={initialRole}>
@@ -281,72 +310,84 @@ export default function DashboardClient({ initialUserName, initialRole }) {
 						{loading ? (
 							<div className="flex h-[320px] items-center justify-center text-sm text-slate-500">Loading dashboard metrics...</div>
 						) : (
-							<div className="grid grid-cols-[42px_1fr] gap-3 md:grid-cols-[56px_1fr] md:gap-5">
-								<div className="flex h-[320px] flex-col justify-between pb-14 text-[11px] font-medium text-slate-400 md:text-xs">
-									{chartSteps.map((step) => (
-										<span key={step}>{Math.round(step)}</span>
-									))}
-								</div>
+							<div>
+								<div className="relative h-[320px] rounded-[24px] bg-[#f8fafc] p-3 md:p-4">
+									<svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="h-full w-full" preserveAspectRatio="none">
+										<g transform={`translate(${chartPadding.left}, ${chartPadding.top})`}>
+											{chartSteps.map((step) => {
+												const y = getChartY(step, plotHeight, chartMax);
 
-								<div>
-									<div className="relative h-[320px] rounded-[24px] bg-[#f8fafc] px-4 pb-12 pt-6 md:px-6">
-										<div className="pointer-events-none absolute inset-x-4 top-6 bottom-12 md:inset-x-6">
-											{chartSteps.map((step) => (
-												<div key={step} className="h-1/5 border-b border-[#d5deea] last:border-b-0" />
-											))}
-										</div>
-
-										<div className="relative h-full">
-											<svg viewBox={`0 0 ${chartWidth} ${chartHeight + 44}`} className="h-full w-full overflow-visible" preserveAspectRatio="none">
-												{LINE_SERIES.map((series) => (
-													<g key={series.key}>
-														<path
-															d={buildLinePath(chartData.map((point) => point[series.key]), chartWidth, chartHeight, chartMax)}
-															fill="none"
-															stroke={series.color}
-															strokeWidth="4"
-															strokeLinecap="round"
-															strokeLinejoin="round"
+												return (
+													<g key={step}>
+														<line
+															x1="0"
+															y1={y}
+															x2={plotWidth}
+															y2={y}
+															stroke="#d5deea"
+															strokeWidth="1.5"
+															shapeRendering="crispEdges"
 														/>
-														{chartData.map((point, index) => {
-															const x = chartData.length === 1 ? chartWidth / 2 : (index / (chartData.length - 1)) * chartWidth;
-															const y = chartHeight - (point[series.key] / chartMax) * chartHeight;
-
-															return (
-																<g key={`${series.key}-${point.key}`}>
-																	<circle cx={x} cy={y} r="5" fill={series.color} />
-																	<title>{`${series.label}: ${point[series.key]} (${point.label})`}</title>
-																</g>
-															);
-														})}
-													</g>
-												))}
-
-												{chartData.map((point, index) => {
-													const x = chartData.length === 1 ? chartWidth / 2 : (index / (chartData.length - 1)) * chartWidth;
-
-													return (
 														<text
-															key={point.key}
+															x="-14"
+															y={y + 4}
+															textAnchor="end"
+															fontSize="12"
+															fontWeight="600"
+															fill="#94a3b8"
+														>
+															{step}
+														</text>
+													</g>
+												);
+											})}
+
+											<path
+												d={buildLinePath(chartData.map((point) => point.applications), plotWidth, plotHeight, chartMax)}
+												fill="none"
+												stroke={chartColors.applications}
+												strokeWidth="5"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											/>
+
+											{chartData.map((point, index) => {
+												const x = getChartPointPosition(index, chartData.length, plotWidth);
+												const y = getChartY(point.applications, plotHeight, chartMax);
+
+												return (
+													<g key={point.key}>
+														<circle cx={x} cy={y} r="7" fill="white" stroke={chartColors.applications} strokeWidth="4" />
+														<text
 															x={x}
-															y={chartHeight + 28}
+															y={Math.max(16, y - 14)}
+															textAnchor="middle"
+															fontSize="13"
+															fontWeight="700"
+															fill={chartColors.applications}
+														>
+															{point.applications}
+														</text>
+														<text
+															x={x}
+															y={plotHeight + 30}
 															textAnchor="middle"
 															fontSize="12"
+															fontWeight="600"
 															fill="#64748b"
 														>
 															{point.label}
 														</text>
-													);
-												})}
-											</svg>
-										</div>
-									</div>
+														<title>{`Applications: ${point.applications} (${point.label})`}</title>
+													</g>
+												);
+											})}
+										</g>
+									</svg>
+								</div>
 
-									<div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600">
-										{LINE_SERIES.map((series) => (
-											<span key={series.key} className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: series.color }} />{series.label}</span>
-										))}
-									</div>
+								<div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600">
+									<span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: chartColors.applications }} />Applications</span>
 								</div>
 							</div>
 						)}

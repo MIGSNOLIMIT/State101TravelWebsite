@@ -15,6 +15,9 @@ export async function GET() {
     }
 
     const items = await prisma.applicationEntry.findMany({
+      where: {
+        archivedAt: null,
+      },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,

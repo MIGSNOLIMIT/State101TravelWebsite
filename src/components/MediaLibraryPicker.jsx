@@ -16,7 +16,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { getFileExtension, inferAltText, inferMediaTypeFromName, isImageType, isVideoType, validateFileDescriptor } from "@/lib/media";
+import { getAcceptDescription, getFileExtension, inferAltText, inferMediaTypeFromName, isImageType, isVideoType, validateFileAgainstAccept, validateFileDescriptor } from "@/lib/media";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -142,6 +142,29 @@ function Toast({ toast, onDismiss }) {
   );
 }
 
+function UploadErrorDialog({ open, message, onConfirm }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-950/55" aria-hidden="true" />
+      <div className="relative w-full max-w-md rounded-[24px] border border-red-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.35)] dark:border-red-900/60 dark:bg-slate-900">
+        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Upload Error</h3>
+        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{message}</p>
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="inline-flex items-center justify-center rounded-md bg-[#1f57a4] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#184888]"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SelectedMediaCard({ item, index, total, onRemove, onMoveLeft, onMoveRight, multiple }) {
   return (
     <div className="relative rounded-[20px] border-2 border-[#9eb8e3] bg-white p-3 shadow-sm dark:border-[#5d7fb3] dark:bg-slate-900">
@@ -173,10 +196,20 @@ function SelectedMediaCard({ item, index, total, onRemove, onMoveLeft, onMoveRig
 }
 
 function MediaCard({ item, selected, onToggle, onDelete, onCopyUrl, onOpenOriginal }) {
+  const handleToggle = () => onToggle(item);
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onToggle(item);
+    }
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => onToggle(item)}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleToggle}
+      onKeyDown={handleKeyDown}
       className={[
         "group relative overflow-hidden rounded-[22px] border-2 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-slate-900",
         selected ? "border-[#1f57a4] ring-2 ring-[#bfdbfe] dark:border-[#8fb4ea]" : "border-[#d8e2f1] hover:border-[#9eb8e3] dark:border-[#4d6f9f]",
@@ -217,7 +250,7 @@ function MediaCard({ item, selected, onToggle, onDelete, onCopyUrl, onOpenOrigin
           Delete
         </button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -225,6 +258,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
   const [mediaFiles, setMediaFiles] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [toast, setToast] = useState(null);
+  const [uploadErrorDialog, setUploadErrorDialog] = useState({ open: false, message: "" });
   const [nextCursor, setNextCursor] = useState(null);
   const [selected, setSelected] = useState(() => normalizeSelected(value, multiple));
   const [uploading, setUploading] = useState(false);
@@ -343,6 +377,11 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
 
   const notify = (message, tone = "success") => setToast({ message, tone });
 
+  const showUploadError = (message) => {
+    setErrorMsg(message);
+    setUploadErrorDialog({ open: true, message });
+  };
+
   const handleCopyUrl = async (item) => {
     try {
       await navigator.clipboard.writeText(item.url);
@@ -391,14 +430,20 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
 
   const uploadFiles = async (files) => {
     if (!supabase) {
-      notify("Supabase client is not configured for uploads.", "error");
+      showUploadError("Supabase client is not configured for uploads.");
       return;
     }
 
     setUploading(true);
+    setErrorMsg("");
     try {
       const descriptors = [];
       for (const file of files) {
+        const acceptError = validateFileAgainstAccept(file, accept);
+        if (acceptError) {
+          throw new Error(`${file.name}: ${acceptError}`);
+        }
+
         const validationError = validateFileDescriptor(file);
         if (validationError) {
           throw new Error(`${file.name}: ${validationError}`);
@@ -418,7 +463,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
       const prepareRes = await fetch("/api/admin/media/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: descriptors, folder }),
+        body: JSON.stringify({ files: descriptors, folder, accept }),
       });
       const preparePayload = await prepareRes.json();
       if (!prepareRes.ok) {
@@ -459,7 +504,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
       notify(`${uploadedItems.length} media file${uploadedItems.length === 1 ? "" : "s"} uploaded.`);
       setOpen(true);
     } catch (error) {
-      notify(error.message || "Upload failed.", "error");
+      showUploadError(error.message || "Upload failed.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -483,6 +528,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#1f57a4]">Media Selection</p>
             <p className="mt-1 text-sm text-slate-500">{selectedUrls.length ? `${selectedUrls.length} file${selectedUrls.length === 1 ? "" : "s"} selected` : "No media selected yet."}</p>
+            <p className="mt-1 text-xs text-slate-500">{getAcceptDescription(accept)}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-md bg-[#1f57a4] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#184888]">
@@ -534,6 +580,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
                 <div>
                   <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Media Library</h3>
                   <p className="mt-1 text-sm text-slate-500">Browse all current Supabase storage files, upload new media, and keep CMS selections linked to public website content.</p>
+                  <p className="mt-1 text-xs text-slate-500">{getAcceptDescription(accept)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-md bg-[#2c7a10] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#24640d] disabled:opacity-70" disabled={uploading}>
@@ -629,6 +676,12 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
           </div>
         </div>
       ) : null}
+
+      <UploadErrorDialog
+        open={uploadErrorDialog.open}
+        message={uploadErrorDialog.message}
+        onConfirm={() => setUploadErrorDialog({ open: false, message: "" })}
+      />
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </>

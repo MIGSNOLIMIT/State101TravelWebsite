@@ -6,7 +6,7 @@ import { FaTiktok } from "react-icons/fa";
 import { useEffect, useState } from "react";
 
 export default function Footer() {
-  const [contact, setContact] = useState({ address: "", phone: "", email: "" });
+  const [contact, setContact] = useState({ address: "", phone: "", email: "", hours: "" });
   const [socials, setSocials] = useState([]);
   const [logoUrl, setLogoUrl] = useState("/images/logo.png");
 
@@ -20,6 +20,7 @@ export default function Footer() {
             address: data.address || "",
             phone: data.phone || "",
             email: data.email || "",
+            hours: data.hours || "",
           });
           let links = [];
           try {
@@ -75,10 +76,11 @@ export default function Footer() {
                     </a>
                   </li>
                 )}
-                {/* Office Hours (static) */}
-                <li className="flex items-center space-x-2">
-                  <span>Office Hours 9AM-5PM</span>
-                </li>
+                {contact.hours && (
+                  <li className="flex items-center space-x-2">
+                    <span>{contact.hours}</span>
+                  </li>
+                )}
               </ul>
             </div>
           )}

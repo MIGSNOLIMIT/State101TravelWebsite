@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  APPLICATION_FILE_ACCEPT,
+  APPLICATION_FILE_NOTE,
+  APPLICATION_SUCCESS_MESSAGE,
+  validateApplicationUploadFile,
+} from "@/lib/application-files";
 
 export default function ApplicationFormEmbed() {
   const formRef = useRef(null);
@@ -9,6 +15,19 @@ export default function ApplicationFormEmbed() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  function handleFileChange(event) {
+    setError("");
+    const files = Array.from(event.target.files || []);
+    for (const file of files) {
+      const fileError = validateApplicationUploadFile(file);
+      if (fileError) {
+        setError(`${file.name}: ${fileError}`);
+        event.target.value = "";
+        return;
+      }
+    }
+  }
 
   useEffect(() => {
     let ignore = false;
@@ -54,7 +73,7 @@ export default function ApplicationFormEmbed() {
         <h2 className="text-2xl font-bold text-blue-700 mb-6">Application Form</h2>
         {success && (
           <div className="mb-6 rounded bg-green-100 text-green-800 px-4 py-3">
-            Thank you! Your application has been submitted.
+            {APPLICATION_SUCCESS_MESSAGE}
           </div>
         )}
         {error && (
@@ -74,8 +93,8 @@ export default function ApplicationFormEmbed() {
                 required
                 className="mt-1 w-full rounded border px-3 py-2"
                 placeholder="you@example.com"
-                pattern="^(?=.{1,64}@)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
-                title="Please enter a valid email address."
+                pattern="^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,24}$"
+                title="Please enter a valid email address with a complete domain."
                 autoComplete="email"
                 maxLength={254}
               />
@@ -135,7 +154,15 @@ export default function ApplicationFormEmbed() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Upload Files: Valid Passport, Resume, etc.</label>
-            <input type="file" name="files" multiple className="mt-1 block w-full text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white hover:file:bg-blue-700" />
+            <input
+              type="file"
+              name="files"
+              multiple
+              accept={APPLICATION_FILE_ACCEPT}
+              onChange={handleFileChange}
+              className="mt-1 block w-full text-sm text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white hover:file:bg-blue-700"
+            />
+            <p className="mt-1 text-xs text-gray-600">{APPLICATION_FILE_NOTE}</p>
           </div>
 
           <button type="submit" disabled={submitting} className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold px-6 py-2 rounded hover:from-blue-700 hover:to-red-700 disabled:opacity-60">

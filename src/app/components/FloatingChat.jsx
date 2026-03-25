@@ -7,6 +7,7 @@ export default function FloatingChat() {
 
   const [sessionActive, setSessionActive] = useState(false);
   const [open, setOpen] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const [isSmall, setIsSmall] = useState(false);
 
   const [loaded, setLoaded] = useState(false);
@@ -45,6 +46,15 @@ export default function FloatingChat() {
   };
 
   const handleOpen = () => {
+    if (!sessionActive) {
+      setShowIntro(true);
+      return;
+    }
+    setOpen(true);
+  };
+
+  const handleConfirmOpen = () => {
+    setShowIntro(false);
     if (!sessionActive) setSessionActive(true);
     setOpen(true);
   };
@@ -129,6 +139,25 @@ export default function FloatingChat() {
           </svg>
         </button>
       )}
+
+      {showIntro ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-slate-900">Chat Assistant</h3>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
+              Our chat assistant may take a little longer to open sometimes. If that happens, please wait a moment and it should load shortly.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowIntro(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                Not Now
+              </button>
+              <button type="button" onClick={handleConfirmOpen} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                OK, Open Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {sessionActive && (
         <div

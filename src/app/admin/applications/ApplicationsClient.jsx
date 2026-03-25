@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2, Clock3, Download, Files, Search, ShieldAlert, Trash2, XCircle } from "lucide-react";
+import { Archive, CheckCircle2, Clock3, Download, Files, Loader2, Plus, RotateCcw, Search, ShieldAlert, XCircle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
-import { deleteApplication } from "@/lib/application";
+import { archiveApplication, restoreApplication } from "@/lib/application";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   APPLICATION_STATUS_ACTIONS,
   APPLICATION_STATUS_ORDER,
@@ -56,12 +57,30 @@ function formatDate(date) {
   return new Date(date).toLocaleString();
 }
 
+const INITIAL_WALK_IN_FORM = {
+  fullName: "",
+  email: "",
+  phone: "",
+  address: "",
+  visaType: "",
+  age: "",
+  availableTime: "",
+  availableDay: "",
+};
+
 export default function ApplicationsClient({ initialUserName, initialRole }) {
   const searchParams = useSearchParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [msgTone, setMsgTone] = useState("error");
   const [search, setSearch] = useState("");
+  const [walkInOpen, setWalkInOpen] = useState(false);
+  const [walkInSubmitting, setWalkInSubmitting] = useState(false);
+  const [walkInForm, setWalkInForm] = useState(INITIAL_WALK_IN_FORM);
+  const [activeSection, setActiveSection] = useState(() => (searchParams.get("view") === "archived" ? "archived" : "active"));
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [activeStatus, setActiveStatus] = useState(() => {
     const value = searchParams.get("status");
     return isApplicationStatus(value) ? value : "NEW";
@@ -87,8 +106,12 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
         setItems(json);
         setMsg("");
+        setMsgTone("error");
       } catch {
-        if (!ignore) setMsg("Failed to load applications");
+        if (!ignore) {
+          setMsg("Failed to load applications");
+          setMsgTone("error");
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -103,11 +126,13 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   useEffect(() => {
     const value = searchParams.get("status");
     setActiveStatus(isApplicationStatus(value) ? value : "NEW");
+    setActiveSection(searchParams.get("view") === "archived" ? "archived" : "active");
   }, [searchParams]);
 
   const onImportBackup = async (file) => {
     if (!file) return;
     setMsg("");
+    setMsgTone("error");
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -115,17 +140,20 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
       const json = await res.json().catch(() => ({}));
       if (res.ok && json?.success) {
         setMsg(`Imported ${json.entriesCreated ?? 0} created, ${json.entriesMatched ?? 0} matched, ${json.filesUploaded ?? 0} files.`);
+        setMsgTone("success");
         const list = await fetch("/api/application/list", { cache: "no-store" });
         if (list.ok) setItems(await list.json());
       } else {
         setMsg(json?.error || "Import failed");
+        setMsgTone("error");
       }
     } catch {
       setMsg("Import failed");
+      setMsgTone("error");
     }
   };
 
-  const onChangeStatus = async (id, status) => {
+  const doChangeStatus = async (id, status) => {
     setStatusUpdatingId(id);
     try {
       const res = await fetch(`/api/application/${id}`, {
@@ -138,37 +166,133 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
       } else {
         const err = await res.json().catch(() => ({}));
         setMsg(err?.error || "Failed to update status");
+        setMsgTone("error");
       }
     } catch {
       setMsg("Failed to update status");
+      setMsgTone("error");
     } finally {
       setStatusUpdatingId("");
     }
   };
 
-  const onDelete = async (id) => {
-    if (!confirm("Delete this application? This cannot be undone.")) return;
+  const onChangeStatus = async (id, status) => {
+    if (["APPROVED", "DECLINED"].includes(status)) {
+      setConfirmAction({ id, status });
+      return;
+    }
+
+    await doChangeStatus(id, status);
+  };
+
+  const onArchive = async (id) => {
+    if (!confirm("Archive this application? You can restore it later from the archive section.")) return;
     try {
-      await deleteApplication(id);
-      setItems((prev) => prev.filter((it) => it.id !== id));
+      const result = await archiveApplication(id);
+      const archivedAt = result?.item?.archivedAt || new Date().toISOString();
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, archivedAt } : it)));
+      setMsg("Application archived.");
+      setMsgTone("success");
     } catch (e) {
       setMsg(e.message);
+      setMsgTone("error");
     }
   };
 
+  const onRestore = async (id) => {
+    try {
+      const restored = await restoreApplication(id);
+      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...restored, archivedAt: null } : it)));
+      setMsg("Application restored.");
+      setMsgTone("success");
+      setSectionView("active", restored.status || activeStatus);
+    } catch (e) {
+      setMsg(e.message);
+      setMsgTone("error");
+    }
+  };
+
+  const onWalkInFieldChange = (field, value) => {
+    setWalkInForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const onCreateWalkIn = async (event) => {
+    event.preventDefault();
+    setWalkInSubmitting(true);
+    setMsg("");
+
+    try {
+      const res = await fetch("/api/application/admin-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(walkInForm),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(json?.error || "Failed to create application");
+        setMsgTone("error");
+        return;
+      }
+
+      setItems((prev) => [json, ...prev]);
+      setWalkInForm(INITIAL_WALK_IN_FORM);
+      setWalkInOpen(false);
+      setMsg("Walk-in application added successfully.");
+      setMsgTone("success");
+      setStatusView("NEW");
+    } catch {
+      setMsg("Failed to create application");
+      setMsgTone("error");
+    } finally {
+      setWalkInSubmitting(false);
+    }
+  };
+
+  const onDownloadBackup = async () => {
+    setBackupLoading(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/backup/generate?mode=full");
+      if (!res.ok) {
+        throw new Error("Failed to create backup ZIP");
+      }
+
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `applications-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      setMsg("Backup ZIP is ready.");
+      setMsgTone("success");
+    } catch (error) {
+      setMsg(error.message || "Failed to create backup ZIP");
+      setMsgTone("error");
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const activeItems = useMemo(() => items.filter((item) => !item.archivedAt), [items]);
+  const archivedItems = useMemo(() => items.filter((item) => Boolean(item.archivedAt)), [items]);
+
   const counts = useMemo(
     () => ({
-      NEW: items.filter((item) => item.status === "NEW").length,
-      IN_REVIEW: items.filter((item) => item.status === "IN_REVIEW").length,
-      APPROVED: items.filter((item) => item.status === "APPROVED").length,
-      DECLINED: items.filter((item) => item.status === "DECLINED").length,
+      NEW: activeItems.filter((item) => item.status === "NEW").length,
+      IN_REVIEW: activeItems.filter((item) => item.status === "IN_REVIEW").length,
+      APPROVED: activeItems.filter((item) => item.status === "APPROVED").length,
+      DECLINED: activeItems.filter((item) => item.status === "DECLINED").length,
     }),
-    [items]
+    [activeItems]
   );
 
-  const filteredItems = useMemo(
+  const filteredActiveItems = useMemo(
     () =>
-      items.filter((item) => {
+      activeItems.filter((item) => {
         const matchesSearch =
           !search ||
           item.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -177,18 +301,56 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
         return matchesSearch && item.status === activeStatus;
       }),
-    [activeStatus, items, search]
+    [activeItems, activeStatus, search]
+  );
+
+  const filteredArchivedItems = useMemo(
+    () =>
+      archivedItems.filter((item) => {
+        const matchesSearch =
+          !search ||
+          item.fullName.toLowerCase().includes(search.toLowerCase()) ||
+          item.email.toLowerCase().includes(search.toLowerCase()) ||
+          item.visaType.toLowerCase().includes(search.toLowerCase());
+
+        return matchesSearch;
+      }),
+    [archivedItems, search]
   );
 
   const setStatusView = (status) => {
+    setActiveSection("active");
     setActiveStatus(status);
     router.replace(`/admin/applications?status=${status}`);
+  };
+
+  const setSectionView = (section, status = activeStatus) => {
+    setActiveSection(section);
+    if (section === "archived") {
+      router.replace("/admin/applications?view=archived");
+      return;
+    }
+
+    const nextStatus = isApplicationStatus(status) ? status : "NEW";
+    setActiveStatus(nextStatus);
+    router.replace(`/admin/applications?status=${nextStatus}`);
   };
 
   return (
     <AdminShell title="Applications" userName={initialUserName} role={initialRole}>
       <div className="space-y-6">
-        {msg ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-200">{msg}</div> : null}
+        {msg ? (
+          <div
+            className={[
+              "rounded-2xl border px-4 py-3 text-sm",
+              msgTone === "success"
+                ? "border-green-200 bg-green-50 text-green-700 dark:border-green-500/40 dark:bg-green-950/40 dark:text-green-200"
+                : "border-red-200 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-200",
+            ].join(" ")}
+          >
+            {msg}
+          </div>
+        ) : null}
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {APPLICATION_STATUS_ORDER.map((status) => {
@@ -224,8 +386,14 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
           <div className="border-b-2 border-[#b8cae8] bg-[#f7f9fc] px-5 py-5 dark:border-[#4d6f9f] dark:bg-slate-950 md:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-2xl font-semibold text-[#143f88]">{getApplicationStatusLabel(activeStatus)} Applications</h2>
-                <p className="text-sm text-slate-500">Review each application and move it through the four-step admin workflow.</p>
+                <h2 className="text-2xl font-semibold text-[#143f88]">
+                  {activeSection === "archived" ? "Archived Applications" : `${getApplicationStatusLabel(activeStatus)} Applications`}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {activeSection === "archived"
+                    ? "Archived applications stay in the system and can be restored whenever needed."
+                    : "Review each application and move it through the four-step admin workflow."}
+                </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
@@ -241,13 +409,23 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                 </label>
 
                 <div className="flex flex-wrap gap-2">
-                  <a
-                    href="/api/backup/generate?mode=full"
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                  <button
+                    type="button"
+                    onClick={() => setWalkInOpen((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#0f1f77] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0b1758]"
                   >
-                    <Download size={16} />
-                    Backup ZIP
-                  </a>
+                    <Plus size={16} />
+                    {walkInOpen ? "Close Walk-in Form" : "Add Walk-in Application"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDownloadBackup}
+                    disabled={backupLoading}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {backupLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                    {backupLoading ? "Creating Backup..." : "Backup ZIP"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => importInputRef.current?.click()}
@@ -272,8 +450,147 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
             </div>
           </div>
 
+          {walkInOpen ? (
+            <div className="border-b-2 border-[#d6e1f1] bg-[#fbfdff] px-5 py-5 dark:border-[#415e89] dark:bg-slate-950/60 md:px-6">
+              <form onSubmit={onCreateWalkIn} className="space-y-4">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Add Walk-in Application</h3>
+                  <p className="text-sm text-slate-500">Create an application for visitors who applied directly in person. It will be saved under Recent.</p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Full Name
+                    <input
+                      type="text"
+                      required
+                      value={walkInForm.fullName}
+                      onChange={(event) => onWalkInFieldChange("fullName", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="Juan Dela Cruz"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Email
+                    <input
+                      type="email"
+                      required
+                      value={walkInForm.email}
+                      onChange={(event) => onWalkInFieldChange("email", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="you@example.com"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Phone
+                    <input
+                      type="text"
+                      required
+                      value={walkInForm.phone}
+                      onChange={(event) => onWalkInFieldChange("phone", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="09171234567 or +639171234567"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Address
+                    <input
+                      type="text"
+                      required
+                      value={walkInForm.address}
+                      onChange={(event) => onWalkInFieldChange("address", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="City / Province"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Visa Type
+                    <input
+                      type="text"
+                      required
+                      value={walkInForm.visaType}
+                      onChange={(event) => onWalkInFieldChange("visaType", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="Canadian, Australian, etc."
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Age
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={walkInForm.age}
+                      onChange={(event) => onWalkInFieldChange("age", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Available Time
+                    <select
+                      required
+                      value={walkInForm.availableTime}
+                      onChange={(event) => onWalkInFieldChange("availableTime", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                    >
+                      <option value="">Select Time</option>
+                      <option value="9AM-12PM">9AM-12PM</option>
+                      <option value="1PM-3PM">1PM-3PM</option>
+                      <option value="4PM-5PM">4PM-5PM</option>
+                    </select>
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Available Day
+                    <select
+                      required
+                      value={walkInForm.availableDay}
+                      onChange={(event) => onWalkInFieldChange("availableDay", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                    >
+                      <option value="">Select Day</option>
+                      <option value="Monday">Monday</option>
+                      <option value="Tuesday">Tuesday</option>
+                      <option value="Wednesday">Wednesday</option>
+                      <option value="Thursday">Thursday</option>
+                      <option value="Friday">Friday</option>
+                      <option value="Saturday">Saturday</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={walkInSubmitting}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Plus size={16} />
+                    {walkInSubmitting ? "Saving..." : "Save Walk-in Application"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWalkInForm(INITIAL_WALK_IN_FORM);
+                      setWalkInOpen(false);
+                    }}
+                    className="rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : null}
+
           <div className="border-b-2 border-[#d6e1f1] px-5 py-4 dark:border-[#415e89] md:px-6">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {APPLICATION_STATUS_ORDER.map((status) => (
                 <button
                   key={status}
@@ -292,21 +609,115 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </span>
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={() => setSectionView("archived")}
+                className={[
+                  "rounded-full px-4 py-2 text-sm font-medium transition",
+                  activeSection === "archived"
+                    ? "bg-slate-900 text-white dark:bg-slate-700"
+                    : "bg-[#f3f4f6] text-slate-600 hover:bg-[#e5e7eb] dark:bg-slate-800 dark:text-slate-200",
+                ].join(" ")}
+              >
+                Archive
+                <span className="ml-2 rounded-full bg-white/80 px-2 py-0.5 text-xs text-slate-600">
+                  {archivedItems.length}
+                </span>
+              </button>
             </div>
           </div>
 
           <div className="px-5 py-6 md:px-6">
             {loading ? (
               <div className="flex h-48 items-center justify-center text-sm text-slate-500">Loading applications...</div>
-            ) : filteredItems.length === 0 ? (
+            ) : activeSection === "archived" ? (
+              filteredArchivedItems.length === 0 ? (
+                <div className="rounded-[24px] border-2 border-dashed border-[#9eb8e3] bg-[#f8fafc] px-6 py-12 text-center dark:border-[#5d7fb3] dark:bg-slate-950">
+                  <Archive className="mx-auto text-slate-400" size={32} />
+                  <p className="mt-4 text-lg font-medium text-slate-700 dark:text-slate-100">No archived applications found.</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Archive items from the active workflow to keep them here for later review.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredArchivedItems.map((item) => (
+                    <article key={item.id} className="rounded-[24px] border-2 border-[#9eb8e3] bg-[#f8fafd] p-5 shadow-[0_10px_20px_rgba(15,23,42,0.05)] dark:border-[#5d7fb3] dark:bg-slate-950">
+                      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-white dark:bg-slate-700">
+                              Archived
+                            </span>
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-200">
+                              {getApplicationStatusLabel(item.status)}
+                            </span>
+                          </div>
+
+                          <h3 className="mt-4 text-2xl font-semibold text-slate-900 dark:text-slate-100">{item.fullName}</h3>
+                          <div className="mt-2 grid gap-3 text-sm text-slate-600 dark:text-slate-300 md:grid-cols-2 xl:grid-cols-3">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Email</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.email}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Phone</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.phone}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Visa Type</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.visaType}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Submitted</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{formatDate(item.createdAt)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Archived</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{formatDate(item.archivedAt)}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="w-full xl:max-w-[360px]">
+                          <div className="rounded-[20px] border-2 border-[#c8d7ee] bg-white p-4 shadow-sm dark:border-[#4d6f9f] dark:bg-slate-900">
+                            <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-300">
+                              <span>Attached files</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-100">{item._count?.files || 0}</span>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/admin/applications/${item.id}`)}
+                                className="rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                              >
+                                View Details
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onRestore(item.id)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-green-300 px-4 py-2.5 text-sm font-semibold text-green-700 transition hover:bg-green-50 dark:border-green-500/50 dark:text-green-300 dark:hover:bg-green-950/40"
+                              >
+                                <RotateCcw size={15} />
+                                Restore
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )
+            ) : filteredActiveItems.length === 0 ? (
               <div className="rounded-[24px] border-2 border-dashed border-[#9eb8e3] bg-[#f8fafc] px-6 py-12 text-center dark:border-[#5d7fb3] dark:bg-slate-950">
                 <ShieldAlert className="mx-auto text-slate-400" size={32} />
-                <p className="mt-4 text-lg font-medium text-slate-700">No applications found in {getApplicationStatusLabel(activeStatus)}.</p>
-                <p className="mt-2 text-sm text-slate-500">Try another status or adjust the search field.</p>
+                <p className="mt-4 text-lg font-medium text-slate-700 dark:text-slate-100">No applications found in {getApplicationStatusLabel(activeStatus)}.</p>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Try another status or adjust the search field.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredItems.map((item, index) => {
+                {filteredActiveItems.map((item, index) => {
                   const actions = APPLICATION_STATUS_ACTIONS[item.status] || [];
                   const isBusy = statusUpdatingId === item.id;
 
@@ -323,31 +734,31 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                             </span>
                           </div>
 
-                          <h3 className="mt-4 text-2xl font-semibold text-slate-900">{item.fullName}</h3>
-                          <div className="mt-2 grid gap-3 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-3">
+                          <h3 className="mt-4 text-2xl font-semibold text-slate-900 dark:text-slate-100">{item.fullName}</h3>
+                          <div className="mt-2 grid gap-3 text-sm text-slate-600 dark:text-slate-300 md:grid-cols-2 xl:grid-cols-3">
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Email</p>
-                              <p className="mt-1 font-medium text-slate-800">{item.email}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.email}</p>
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Phone</p>
-                              <p className="mt-1 font-medium text-slate-800">{item.phone}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.phone}</p>
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Visa Type</p>
-                              <p className="mt-1 font-medium text-slate-800">{item.visaType}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.visaType}</p>
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Address</p>
-                              <p className="mt-1 font-medium text-slate-800">{item.address}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.address}</p>
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Availability</p>
-                              <p className="mt-1 font-medium text-slate-800">{item.availableDay}, {item.availableTime}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.availableDay}, {item.availableTime}</p>
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Submitted</p>
-                              <p className="mt-1 font-medium text-slate-800">{formatDate(item.createdAt)}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{formatDate(item.createdAt)}</p>
                             </div>
                           </div>
                         </div>
@@ -369,17 +780,18 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                               </button>
                               <a
                                 href={`/api/application/${item.id}/zip`}
-                                className="rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                className="rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-100 dark:hover:bg-slate-800"
                               >
                                 Download ZIP
                               </a>
                               <button
                                 type="button"
-                                onClick={() => onDelete(item.id)}
-                                className="ml-auto rounded-xl border border-red-200 px-3 py-2.5 text-red-600 transition hover:bg-red-50"
-                                title="Delete application"
+                                onClick={() => onArchive(item.id)}
+                                className="ml-auto inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-slate-600 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-200 dark:hover:bg-slate-800"
+                                title="Archive application"
                               >
-                                <Trash2 size={16} />
+                                <Archive size={16} />
+                                Archive
                               </button>
                             </div>
 
@@ -413,6 +825,21 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(confirmAction)}
+        title={confirmAction?.status === "APPROVED" ? "Approve application?" : "Decline application?"}
+        message={confirmAction?.status === "APPROVED" ? "Are you sure you want to approve this applicant?" : "Are you sure you want to decline this applicant?"}
+        confirmText={confirmAction?.status === "APPROVED" ? "Approve" : "Decline"}
+        cancelText="Cancel"
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={async () => {
+          if (!confirmAction) return;
+          const pending = confirmAction;
+          setConfirmAction(null);
+          await doChangeStatus(pending.id, pending.status);
+        }}
+      />
     </AdminShell>
   );
 }

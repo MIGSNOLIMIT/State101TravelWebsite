@@ -3,7 +3,7 @@
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
-import { AdminEditorCard, AdminEditorLabel } from "@/app/admin/components/AdminEditorUi";
+import { AdminEditorCard, AdminEditorLabel, adminEditorTextareaClass } from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import Image from "next/image";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
@@ -98,7 +98,33 @@ export default function AboutClient({ initialUserName, initialRole }) {
                   <Image src={data.heroImageUrl} alt="About page banner" width={280} height={120} className="rounded-md border border-[#c7d5eb] object-contain" />
                 </div>
               ) : null}
+
+              <div className="mt-6">
+                <AdminEditorLabel>Banner Description</AdminEditorLabel>
+                <textarea
+                  value={data.heroDescription || ""}
+                  onChange={(event) => setData((prev) => ({ ...prev, heroDescription: event.target.value }))}
+                  className={`${adminEditorTextareaClass} min-h-[120px] resize-y`}
+                  placeholder="Enter the About page banner description"
+                />
+              </div>
             </>
+          )}
+        </AdminEditorCard>
+
+        <AdminEditorCard title="Our Story Content">
+          {loading || !data ? (
+            <div className="flex h-40 items-center justify-center text-sm text-slate-500">Loading story content...</div>
+          ) : (
+            <div>
+              <AdminEditorLabel>Our Story Text</AdminEditorLabel>
+              <textarea
+                value={data.storyContent || ""}
+                onChange={(event) => setData((prev) => ({ ...prev, storyContent: event.target.value }))}
+                className={`${adminEditorTextareaClass} min-h-[220px] resize-y`}
+                placeholder="Enter the About page story text"
+              />
+            </div>
           )}
         </AdminEditorCard>
 

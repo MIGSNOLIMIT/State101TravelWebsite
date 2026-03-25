@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { validateApplicationStyleEmail } from "@/lib/email-validation";
 import { createClient } from "@supabase/supabase-js";
+import { validateApplicationUploadFile } from "@/lib/application-files";
+import {
+  createApplicationEntry,
+  findDuplicateApplication,
+  normalizeApplicationFields,
+  PUBLIC_DUPLICATE_APPLICATION_MESSAGE,
+  validateApplicationFields,
+} from "@/lib/application-submission";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -98,34 +105,29 @@ export async function POST(req) {
         .filter((f) => f && typeof f.arrayBuffer === "function" && typeof f.size === "number" && f.size > 0);
     }
 
-    const { fullName, email, phone, address, visaType, age, availableTime, availableDay } = fields;
-    if (!fullName || !email || !phone || !address || !visaType || !availableTime || !availableDay) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    const normalizedFields = normalizeApplicationFields(fields);
+    const validationError = validateApplicationFields(normalizedFields);
+    if (validationError) {
+      return NextResponse.json({ success: false, error: validationError }, { status: 400 });
     }
 
-    if (validateApplicationStyleEmail(email)) {
-      return NextResponse.json({ success: false, error: "Invalid email address" }, { status: 400 });
+    for (const file of files) {
+      const fileError = validateApplicationUploadFile(file);
+      if (fileError) {
+        return NextResponse.json({ success: false, error: `${file.name}: ${fileError}` }, { status: 400 });
+      }
     }
-    // Strict Philippine mobile validation
-    const phoneRegex = /^(09\d{9}|\+639\d{9})$/;
-    if (!phoneRegex.test(phone)) {
-      return NextResponse.json({ success: false, error: "Invalid phone number" }, { status: 400 });
+
+    const existing = await findDuplicateApplication(normalizedFields);
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: PUBLIC_DUPLICATE_APPLICATION_MESSAGE, duplicate: true },
+        { status: 409 }
+      );
     }
 
     // Create DB entry
-    const entry = await prisma.applicationEntry.create({
-      data: {
-        fullName,
-        email,
-        phone,
-        address,
-        visaType,
-        age: Math.max(0, age | 0),
-        availableTime,
-        availableDay,
-        status: "NEW",
-      },
-    });
+    const entry = await createApplicationEntry(normalizedFields);
 
     const uploaded = [];
     if (files.length > 0) {

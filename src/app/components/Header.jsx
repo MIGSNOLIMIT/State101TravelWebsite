@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
@@ -7,6 +8,14 @@ export default function Header() {
   const logoUrl = '/images/logo.png';
   const companyName = 'State101 Travel';
   const [isAdmin, setIsAdmin] = useState(false);
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: '/', label: 'Home', match: pathname === '/' },
+    { href: '/services', label: 'Services', match: pathname?.startsWith('/services') },
+    { href: '/about', label: 'About Us', match: pathname?.startsWith('/about') },
+    { href: '/tos', label: 'Terms of Services', match: pathname?.startsWith('/tos') },
+  ];
 
   useEffect(() => {
     // Check if user is logged in as admin
@@ -34,10 +43,21 @@ export default function Header() {
       </Link>
       {/* Navigation */}
       <nav className="flex flex-col md:flex-row items-center md:space-x-8 space-y-2 md:space-y-0 text-lg font-medium">
-        <Link href="/" className="text-[#00008b] hover:text-[#E3342F]">Home</Link>
-        <Link href="/services" className="text-[#00008b] hover:text-[#E3342F]">Services</Link>
-        <Link href="/about" className="text-[#00008b] hover:text-[#E3342F]">About Us</Link>
-        <Link href="/tos" className="text-[#00008b] hover:text-[#E3342F]">Terms of Services</Link>
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={item.match ? 'page' : undefined}
+            className={[
+              'flex min-w-[180px] items-center justify-center px-4 py-2 transition md:min-w-0',
+              item.match
+                ? 'rounded-md bg-[#8B1E1E] text-white shadow-[0_10px_24px_rgba(139,30,30,0.24)]'
+                : 'text-[#00008b] hover:bg-[#eef3ff] hover:text-[#E3342F]',
+            ].join(' ')}
+          >
+            {item.label}
+          </Link>
+        ))}
         {isAdmin && (
           <Link href="/admin/dashboard" className="text-white bg-[#00008b] hover:bg-[#000070] px-4 py-2 rounded font-semibold transition">Dashboard</Link>
         )}

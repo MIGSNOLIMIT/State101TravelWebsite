@@ -3,7 +3,7 @@
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
-import { AdminEditorCard, AdminEditorLabel, AdminEditorStrip, adminEditorInputClass, adminEditorTextareaClass } from "@/app/admin/components/AdminEditorUi";
+import { AdminEditorCard, AdminEditorLabel, AdminEditorStrip, adminEditorInputClass, adminEditorReadonlyClass, adminEditorTextareaClass } from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import Image from "next/image";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
@@ -128,7 +128,7 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
             <div className="space-y-5">
               <div>
                 <AdminEditorLabel>Heading</AdminEditorLabel>
-                <div className="mt-2 rounded-md border border-[#c7d5eb] bg-[#f3f4f6] px-4 py-3 text-lg font-semibold text-slate-800 dark:border-[#4d6f9f] dark:bg-slate-950 dark:text-slate-100">
+                <div className={adminEditorReadonlyClass}>
                   Terms of Service
                 </div>
               </div>

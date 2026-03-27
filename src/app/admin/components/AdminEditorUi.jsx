@@ -28,6 +28,8 @@ export function AdminEditorNote({ children, className = "" }) {
   return <p className={["text-sm text-slate-500", className].join(" ")}>{children}</p>;
 }
 
-export const adminEditorInputClass = "mt-2 w-full rounded-md border border-[#c7d5eb] bg-[#f3f4f6] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1f57a4] dark:border-[#4d6f9f] dark:bg-slate-950 dark:text-slate-100";
+export const adminEditorInputClass = "mt-2 w-full rounded-lg border-2 border-[#adc3ea] bg-white px-4 py-3 text-sm text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04),0_1px_2px_rgba(15,23,42,0.05)] outline-none transition placeholder:text-slate-400 hover:border-[#8eaddd] focus:border-[#1f57a4] focus:ring-4 focus:ring-[#d8e5fb] dark:border-[#4d6f9f] dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-[#7398d2] dark:focus:ring-[#16325c]";
 
-export const adminEditorTextareaClass = "mt-2 w-full rounded-md border border-[#c7d5eb] bg-[#f3f4f6] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1f57a4] dark:border-[#4d6f9f] dark:bg-slate-950 dark:text-slate-100";
+export const adminEditorTextareaClass = "mt-2 w-full rounded-lg border-2 border-[#adc3ea] bg-white px-4 py-3 text-sm text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04),0_1px_2px_rgba(15,23,42,0.05)] outline-none transition placeholder:text-slate-400 hover:border-[#8eaddd] focus:border-[#1f57a4] focus:ring-4 focus:ring-[#d8e5fb] dark:border-[#4d6f9f] dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-[#7398d2] dark:focus:ring-[#16325c]";
+
+export const adminEditorReadonlyClass = "mt-2 rounded-lg border-2 border-[#adc3ea] bg-[#f8fbff] px-4 py-3 text-lg font-semibold text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04),0_1px_2px_rgba(15,23,42,0.05)] dark:border-[#4d6f9f] dark:bg-slate-950 dark:text-slate-100";

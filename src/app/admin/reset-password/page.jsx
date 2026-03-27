@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -111,6 +112,11 @@ export default function ResetPassword() {
         {message && (
           <div className="mt-4 text-center text-sm text-white/90">{message}</div>
         )}
+        <div className="mt-6 text-center">
+          <Link href="/admin/portal/manage/state101signin" className="text-sm font-medium text-white/90 underline underline-offset-4 hover:text-white">
+            Back to Login
+          </Link>
+        </div>
       </div>
     </main>
   );

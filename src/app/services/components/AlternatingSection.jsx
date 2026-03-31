@@ -33,7 +33,7 @@ export default function AlternatingSection({
 
         <div className="flex w-full flex-col justify-center text-center md:w-1/2 md:text-left">
           <h2 className="mb-2 text-2xl font-bold md:text-3xl">{header}</h2>
-          <div className={`mb-4 h-1 w-40 rounded sm:w-56 md:w-72 lg:w-[30rem] ${lineClass}`}></div>
+          <div className={`mb-4 h-1 w-56 rounded sm:w-56 md:w-72 lg:w-[30rem] ${lineClass}`}></div>
           <p className="mb-6 text-gray-700">{description}</p>
           <div className="flex justify-center md:justify-start">
             <a

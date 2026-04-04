@@ -35,6 +35,11 @@ video {
   max-width: 100%;
 }
 
+.login-password-input::-ms-reveal,
+.login-password-input::-ms-clear {
+  display: none;
+}
+
 /* Font family utility classes for TipTap */
 .font-almarai { font-family: 'Almarai', Arial, sans-serif; }
 .font-albert { font-family: 'Albert Sans', Arial, sans-serif; }

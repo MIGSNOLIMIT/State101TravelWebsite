@@ -103,7 +103,7 @@ export default function HomeClient({ initialUserName, initialRole }) {
 
   return (
     <AdminShell title="Home Page" userName={initialUserName} role={initialRole}>
-      <AdminEditorCard title="Home Page Media" contentClassName="px-0 py-0">
+      <AdminEditorCard title="Edit here" contentClassName="px-0 py-0">
         {loading || !data ? (
           <div className="flex h-40 items-center justify-center px-5 py-6 text-sm text-slate-500 md:px-6">Loading homepage data...</div>
         ) : (

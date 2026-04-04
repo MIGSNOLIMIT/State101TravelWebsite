@@ -11,6 +11,7 @@ datasource db {
 model TermsOfService {
   id        Int      @id @default(autoincrement())
   heading   String?
+  editorContent String?
   content   String?
   updatedAt DateTime @updatedAt
 }

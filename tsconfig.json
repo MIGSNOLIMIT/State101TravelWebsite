@@ -14,10 +14,9 @@
     "checkJs": false,
     "noEmit": true,
     "strict": false,
-    "baseUrl": "./src",
     "paths": {
       "@/*": [
-        "*"
+        "./src/*"
       ]
     },
     "types": [

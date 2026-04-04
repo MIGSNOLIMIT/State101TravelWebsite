@@ -21,7 +21,7 @@ function tosTextToHtml(text) {
 }
 
 export default function TermsOfServiceClient({ initialUserName, initialRole }) {
-  const [terms, setTerms] = useState({ heading: "", content: "" });
+  const [terms, setTerms] = useState({ heading: "", editorContent: "" });
   const [logos, setLogos] = useState(["", "", ""]);
   const [names, setNames] = useState(["", "", ""]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
         clearTimeout(timeout);
         if (!didCancel && termsRes.ok) {
           const termsJson = await termsRes.json();
-          setTerms({ heading: termsJson.heading || "", content: termsJson.content || "" });
+          setTerms({ heading: termsJson.heading || "", editorContent: termsJson.editorContent || "" });
         }
 
         const logosRes = await fetch("/api/admin/accreditations", { signal: controller.signal });
@@ -82,7 +82,11 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
   const doSave = async () => {
     setPendingSave(true);
     try {
-      const htmlTerms = { ...terms, content: tosTextToHtml(terms.content || "") };
+      const htmlTerms = {
+        heading: terms.heading,
+        editorContent: terms.editorContent || "",
+        content: tosTextToHtml(terms.editorContent || ""),
+      };
       const base = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
       await fetch(`${base}/api/admin/terms-of-service`, {
@@ -110,7 +114,7 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
-    const anyEmpty = !(terms.content && terms.content.trim()) || logos.some((logo) => !logo);
+    const anyEmpty = !(terms.editorContent && terms.editorContent.trim()) || logos.some((logo) => !logo);
     if (anyEmpty) {
       setConfirmOpen(true);
       return;
@@ -135,8 +139,8 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
               <div>
                 <AdminEditorLabel>Content</AdminEditorLabel>
                 <textarea
-                  value={terms.content || ""}
-                  onChange={(event) => setTerms((prev) => ({ ...prev, content: event.target.value }))}
+                  value={terms.editorContent || ""}
+                  onChange={(event) => setTerms((prev) => ({ ...prev, editorContent: event.target.value }))}
                   className={`${adminEditorTextareaClass} min-h-[220px] resize-y`}
                   placeholder="Enter Terms of Service content here"
                 />

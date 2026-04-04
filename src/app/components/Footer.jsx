@@ -119,7 +119,7 @@ export default function Footer() {
                 <a href="/about" className="hover:underline text-blue-200 font-semibold">About Us</a>
               </li>
               <li>
-                <a href="/terms-of-service" className="hover:underline text-blue-200 font-semibold">Terms of Services</a>
+                <a href="/tos" className="hover:underline text-blue-200 font-semibold">Terms of Services</a>
               </li>
             </ul>
           </div>

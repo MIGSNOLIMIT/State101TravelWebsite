@@ -135,12 +135,19 @@ function buildSeries(items, mode) {
 function getNiceChartScale(maxValue, desiredSteps = 5) {
 	if (maxValue <= 0) {
 		return {
-			chartMax: desiredSteps,
-			chartSteps: Array.from({ length: desiredSteps + 1 }, (_, index) => desiredSteps - index),
+			chartMax: 1,
+			chartSteps: [1, 0],
 		};
 	}
 
 	const roughStep = maxValue / desiredSteps;
+	if (roughStep <= 1) {
+		return {
+			chartMax: maxValue,
+			chartSteps: Array.from({ length: maxValue + 1 }, (_, index) => maxValue - index),
+		};
+	}
+
 	const magnitude = 10 ** Math.floor(Math.log10(roughStep));
 	const normalizedStep = roughStep / magnitude;
 
@@ -155,7 +162,11 @@ function getNiceChartScale(maxValue, desiredSteps = 5) {
 
 	const chartMax = Math.max(niceStep, Math.ceil(maxValue / niceStep) * niceStep);
 	const stepsCount = Math.max(1, Math.ceil(chartMax / niceStep));
-	const chartSteps = Array.from({ length: stepsCount + 1 }, (_, index) => chartMax - niceStep * index);
+	const chartSteps = Array.from({ length: stepsCount + 1 }, (_, index) => Math.max(0, chartMax - niceStep * index));
+
+	if (chartSteps[chartSteps.length - 1] !== 0) {
+		chartSteps.push(0);
+	}
 
 	return { chartMax, chartSteps };
 }

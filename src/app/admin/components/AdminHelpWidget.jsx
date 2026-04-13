@@ -30,9 +30,11 @@ const HELP_CONTENT = [
     title: "Applications Guide",
     intro: "This tab is where admins review and manage applicant entries.",
     items: [
-      "Switch status tabs to focus on each stage of the application flow.",
-      "Use View Details to open files, update status, and remove records when needed.",
-      "Workflow actions move applicants through the admin review process.",
+			"Use the status cards and chips to move quickly between Recent, In-Review, Approved, Declined, and Archived records.",
+			"Search matches the applicant name, email address, and visa type so you can find a record without leaving the current status view.",
+      "View Details opens the full applicant profile and uploaded files for the selected applicant.",
+			"Workflow actions should be used in order: move new applicants into review first, then approve or decline once the requirements have been checked.",
+			"Backup ZIP lets you export the current applications archive, while Import Backup only adds missing records and will warn you when the same backup already exists.",
     ],
   },
   {

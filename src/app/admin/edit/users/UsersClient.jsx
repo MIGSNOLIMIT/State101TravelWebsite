@@ -295,7 +295,7 @@ export default function UsersClient({ initialUserName, initialRole }) {
                       setEditingUser(null);
                       setEditForm(initialEditForm);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[#9ca3af] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#808892]"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f0b45b] bg-[#fff7ed] px-3 py-2 text-xs font-semibold text-[#b45309] transition hover:bg-[#ffedd5]"
                   >
                     <X size={14} />
                     Cancel

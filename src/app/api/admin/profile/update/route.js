@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 import { validateApplicationStyleEmail } from '@/lib/email-validation';
+import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 
 export async function PUT(req) {
   const session = await getAdminSession();
@@ -55,6 +56,23 @@ export async function PUT(req) {
     await prisma.user.update({
       where: { id: session.userId },
       data: updateData,
+    });
+
+    await safeWriteAuditLog(req, {
+    category: 'profile',
+    action: 'profile.update',
+    status: 'SUCCESS',
+    summary: `${user.name || user.email} updated their profile.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: 'user',
+    targetId: user.id,
+    targetLabel: user.name || user.email,
+    details: {
+      changedFields: Object.keys(updateData).filter((field) => field !== 'password'),
+      passwordChanged: Boolean(updateData.password),
+      emailChanged: updateData.email !== undefined,
+      nameChanged: updateData.name !== undefined,
+    },
     });
 
     return NextResponse.json({ success: true });

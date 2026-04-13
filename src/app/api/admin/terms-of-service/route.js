@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdminRoles } from '@/lib/admin-access';
+import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 
 function htmlToEditorText(html) {
 	let value = String(html || '');
@@ -30,6 +32,9 @@ export async function GET() {
 // POST: Update ToS and accreditations
 export async function POST(req) {
 	try {
+		const gate = await requireAdminRoles(['admin', 'editor']);
+		if (gate.error) return gate.error;
+		const { user } = gate;
 		const body = await req.json();
 		// Update ToS
 		await prisma.termsOfService.upsert({
@@ -59,6 +64,21 @@ export async function POST(req) {
 				});
 			}
 		}
+		await safeWriteAuditLog(req, {
+			category: 'content',
+			action: 'content.terms.update',
+			status: 'SUCCESS',
+			summary: `${user.name || user.email} updated the Terms of Service page.`,
+			actorSnapshot: buildActorSnapshot(user),
+			targetType: 'terms-of-service',
+			targetId: 1,
+			targetLabel: 'Terms Of Service',
+			details: {
+				heading: body.heading || '',
+				editorContentLength: String(body.editorContent || '').length,
+				accreditationsCount: Array.isArray(body.accreditations) ? body.accreditations.length : 0,
+			},
+		});
 		return NextResponse.json({ success: true });
 	} catch (error) {
 		return NextResponse.json({ error: 'Failed to update Terms of Service.' }, { status: 500 });

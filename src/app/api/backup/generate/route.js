@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import JSZip from "jszip";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -52,6 +53,17 @@ export async function GET(req) {
       where,
       orderBy: { createdAt: "desc" },
       include: { files: true },
+    });
+
+    await safeWriteAuditLog(req, {
+    category: "backup",
+    action: "backup.export",
+    status: "SUCCESS",
+    summary: `${me.name || me.email} exported an applications backup ZIP.`,
+    actorSnapshot: buildActorSnapshot(me),
+    targetType: "backup",
+    targetLabel: mode === "today" ? "Today Backup ZIP" : "Full Backup ZIP",
+    details: { mode, applicationsCount: entries.length },
     });
 
     const zip = new JSZip();

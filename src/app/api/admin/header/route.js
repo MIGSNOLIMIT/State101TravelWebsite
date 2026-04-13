@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { requireAdminRoles } from "@/lib/admin-access";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 // GET: Fetch header logo
 export async function GET() {
@@ -10,8 +11,9 @@ export async function GET() {
 
 // POST: Update header logo
 export async function POST(req) {
-  const session = await getAdminSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminRoles(["admin", "editor"]);
+  if (gate.error) return gate.error;
+  const { user } = gate;
   const { logoUrl } = await req.json();
   let header = await prisma.header.findFirst();
   if (header) {
@@ -24,5 +26,16 @@ export async function POST(req) {
       data: { logoUrl },
     });
   }
+  await safeWriteAuditLog(req, {
+    category: "content",
+    action: "content.header.update",
+    status: "SUCCESS",
+    summary: `${user.name || user.email} updated the website header logo.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: "header",
+    targetId: header.id,
+    targetLabel: "Website Header",
+    details: { hasLogo: Boolean(logoUrl) },
+  });
   return NextResponse.json(header);
 }

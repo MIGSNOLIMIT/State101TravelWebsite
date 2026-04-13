@@ -16,7 +16,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { getAcceptDescription, getFileExtension, inferAltText, inferMediaTypeFromName, isImageType, isVideoType, validateFileAgainstAccept, validateFileDescriptor } from "@/lib/media";
+import { getAcceptDescription, getFileExtension, inferAltText, inferMediaTypeFromName, isImageType, isVideoType, validateFileAgainstAccept, validateFileDescriptor, validateMediaItemAgainstAccept } from "@/lib/media";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -254,7 +254,7 @@ function MediaCard({ item, selected, onToggle, onDelete, onCopyUrl, onOpenOrigin
   );
 }
 
-function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder = "general" }) {
+function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder = "general", onValidationStateChange }) {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [toast, setToast] = useState(null);
@@ -342,10 +342,17 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
 
   const updateSelection = (nextSelection) => {
     setSelected(nextSelection);
+    onValidationStateChange?.("");
     onChange(nextSelection);
   };
 
   const handleToggle = (item) => {
+	  const selectionError = validateMediaItemAgainstAccept(item, accept);
+	  if (selectionError) {
+		showUploadError(`${item.name}: ${selectionError}`);
+		return;
+	  }
+
     if (multiple) {
       const exists = selected.includes(item.url);
       const updated = exists ? selected.filter((url) => url !== item.url) : [...selected, item.url];
@@ -380,6 +387,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
   const showUploadError = (message) => {
     setErrorMsg(message);
     setUploadErrorDialog({ open: true, message });
+	  onValidationStateChange?.(message);
   };
 
   const handleCopyUrl = async (item) => {
@@ -501,6 +509,7 @@ function MediaLibraryPicker({ multiple = false, value, onChange, accept, folder 
         updateSelection(uploadedItems[0].url);
       }
 
+      onValidationStateChange?.("");
       notify(`${uploadedItems.length} media file${uploadedItems.length === 1 ? "" : "s"} uploaded.`);
       setOpen(true);
     } catch (error) {

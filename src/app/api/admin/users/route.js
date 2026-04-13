@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 // Only admins can access user management
 export async function GET() {
@@ -37,6 +38,17 @@ export async function DELETE(req) {
     }
   }
   await prisma.user.delete({ where: { id } });
+  await safeWriteAuditLog(req, {
+    category: "users",
+    action: "users.delete",
+    status: "SUCCESS",
+    summary: `${user.name || user.email} deleted user ${toRemove.name || toRemove.email}.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: "user",
+    targetId: toRemove.id,
+    targetLabel: toRemove.name || toRemove.email,
+    details: { deletedUserEmail: toRemove.email, deletedUserRole: toRemove.role },
+  });
   return NextResponse.json({ success: true });
 }
 
@@ -86,7 +98,23 @@ export async function PATCH(req) {
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
+  const existingUser = await prisma.user.findUnique({ where: { id } });
   const updated = await prisma.user.update({ where: { id }, data: updateData });
+  await safeWriteAuditLog(req, {
+    category: "users",
+    action: "users.update",
+    status: "SUCCESS",
+    summary: `${user.name || user.email} updated user ${updated.name || updated.email}.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: "user",
+    targetId: updated.id,
+    targetLabel: updated.name || updated.email,
+    details: {
+      changedFields: Object.keys(updateData),
+      before: existingUser ? { name: existingUser.name, email: existingUser.email, role: existingUser.role } : null,
+      after: { name: updated.name, email: updated.email, role: updated.role },
+    },
+  });
   return NextResponse.json({ id: updated.id, name: updated.name, email: updated.email, role: updated.role });
 }
 
@@ -113,6 +141,17 @@ export async function POST(req) {
   const hashed = await bcrypt.hash(password, 10);
   const created = await prisma.user.create({
     data: { name, email, password: hashed, role: ["admin", "editor"].includes(role) ? role : "editor" },
+  });
+  await safeWriteAuditLog(req, {
+    category: "users",
+    action: "users.create",
+    status: "SUCCESS",
+    summary: `${user.name || user.email} created user ${created.name || created.email}.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: "user",
+    targetId: created.id,
+    targetLabel: created.name || created.email,
+    details: { createdUserEmail: created.email, createdUserRole: created.role },
   });
   return NextResponse.json({ id: created.id, name: created.name, email: created.email, role: created.role });
 }

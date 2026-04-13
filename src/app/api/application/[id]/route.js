@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 
@@ -30,14 +31,27 @@ export async function PATCH(req, { params }) {
   try {
     const gate = await requireRole();
     if (gate.error) return gate.error;
+    const actor = gate.me;
     const id = params?.id;
     const body = await req.json();
     const { status, archived } = body || {};
 
     if (typeof archived === "boolean") {
+      const existing = await prisma.applicationEntry.findUnique({ where: { id }, select: { id: true, fullName: true, archivedAt: true } });
       const updated = await prisma.applicationEntry.update({
         where: { id },
         data: { archivedAt: archived ? new Date() : null },
+      });
+      await safeWriteAuditLog(req, {
+      category: "applications",
+      action: archived ? "applications.archive" : "applications.restore",
+      status: "SUCCESS",
+      summary: `${actor.name || actor.email} ${archived ? 'archived' : 'restored'} application ${existing?.fullName || updated.id}.`,
+      actorSnapshot: buildActorSnapshot(actor),
+      targetType: "application",
+      targetId: updated.id,
+      targetLabel: existing?.fullName || updated.id,
+      details: { archived },
       });
       return NextResponse.json(updated);
     }
@@ -45,7 +59,19 @@ export async function PATCH(req, { params }) {
     if (!status || !["NEW", "IN_REVIEW", "APPROVED", "DECLINED"].includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
+    const existing = await prisma.applicationEntry.findUnique({ where: { id }, select: { id: true, fullName: true, status: true } });
     const updated = await prisma.applicationEntry.update({ where: { id }, data: { status } });
+    await safeWriteAuditLog(req, {
+      category: "applications",
+      action: "applications.status.update",
+      status: "SUCCESS",
+      summary: `${actor.name || actor.email} changed ${existing?.fullName || updated.id} to ${status}.`,
+      actorSnapshot: buildActorSnapshot(actor),
+      targetType: "application",
+      targetId: updated.id,
+      targetLabel: existing?.fullName || updated.id,
+      details: { fromStatus: existing?.status || null, toStatus: status },
+    });
     return NextResponse.json(updated);
   } catch (e) {
     console.error("application patch error", e);
@@ -57,12 +83,26 @@ export async function DELETE(_req, { params }) {
   try {
     const gate = await requireRole();
     if (gate.error) return gate.error;
+    const actor = gate.me;
     const id = params?.id;
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    const existing = await prisma.applicationEntry.findUnique({ where: { id }, select: { id: true, fullName: true } });
 
     const updated = await prisma.applicationEntry.update({
       where: { id },
       data: { archivedAt: new Date() },
+    });
+
+    await safeWriteAuditLog(_req, {
+      category: "applications",
+      action: "applications.archive",
+      status: "SUCCESS",
+      summary: `${actor.name || actor.email} archived application ${existing?.fullName || updated.id}.`,
+      actorSnapshot: buildActorSnapshot(actor),
+      targetType: "application",
+      targetId: updated.id,
+      targetLabel: existing?.fullName || updated.id,
+      details: { archivedAt: updated.archivedAt },
     });
 
     return NextResponse.json({ success: true, item: updated });

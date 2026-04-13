@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { archiveApplication, restoreApplication } from "@/lib/application";
+import { APPLICATION_VISA_TYPES, getApplicationVisaLabel } from "@/lib/application-visa";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   APPLICATION_STATUS_ACTIONS,
@@ -509,14 +510,17 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Visa Type
-                    <input
-                      type="text"
+                    <select
                       required
                       value={walkInForm.visaType}
                       onChange={(event) => onWalkInFieldChange("visaType", event.target.value)}
                       className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
-                      placeholder="Canadian, Australian, etc."
-                    />
+                    >
+                      <option value="">Select Visa Type</option>
+                      {APPLICATION_VISA_TYPES.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -665,7 +669,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Visa Type</p>
-                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.visaType}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{getApplicationVisaLabel(item.visaType)}</p>
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Submitted</p>
@@ -680,7 +684,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
                         <div className="w-full xl:max-w-[360px]">
                           <div className="rounded-[20px] border-2 border-[#c8d7ee] bg-white p-4 shadow-sm dark:border-[#4d6f9f] dark:bg-slate-900">
-                            <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-300">
+                            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-300">
                               <span>Attached files</span>
                               <span className="font-semibold text-slate-700 dark:text-slate-100">{item._count?.files || 0}</span>
                             </div>
@@ -746,7 +750,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Visa Type</p>
-                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.visaType}</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{getApplicationVisaLabel(item.visaType)}</p>
                             </div>
                             <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Address</p>
@@ -765,29 +769,29 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
                         <div className="w-full xl:max-w-[360px]">
                           <div className="rounded-[20px] border-2 border-[#c8d7ee] bg-white p-4 shadow-sm dark:border-[#4d6f9f] dark:bg-slate-900">
-                            <div className="flex items-center justify-between text-sm text-slate-500">
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
                               <span>Attached files</span>
                               <span className="font-semibold text-slate-700">{item._count?.files || 0}</span>
                             </div>
 
-                            <div className="mt-4 flex flex-wrap gap-2">
+                            <div className="mt-4 grid grid-cols-2 gap-2">
                               <button
                                 type="button"
                                 onClick={() => router.push(`/admin/applications/${item.id}`)}
-                                className="rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                                className="inline-flex items-center justify-center rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773]"
                               >
                                 View Details
                               </button>
                               <a
                                 href={`/api/application/${item.id}/zip`}
-                                className="rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-100 dark:hover:bg-slate-800"
+                                className="inline-flex items-center justify-center rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-100 dark:hover:bg-slate-800"
                               >
                                 Download ZIP
                               </a>
                               <button
                                 type="button"
                                 onClick={() => onArchive(item.id)}
-                                className="ml-auto inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-slate-600 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-200 dark:hover:bg-slate-800"
+                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-200 dark:hover:bg-slate-800"
                                 title="Archive application"
                               >
                                 <Archive size={16} />

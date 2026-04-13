@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import JSZip from "jszip";
 import { createClient } from "@supabase/supabase-js";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,6 +20,36 @@ function parseCsv(text) {
   const header = lines[0].split(",").map((h) => h.trim());
   const rows = lines.slice(1).map((l) => l.split(","));
   return { header, rows };
+}
+
+async function findExistingEntry(entry) {
+  if (entry.id) {
+    const byId = await prisma.applicationEntry.findUnique({ where: { id: entry.id } });
+    if (byId) return byId;
+  }
+
+  if (entry.email && entry.fullName && entry.createdAt) {
+    const createdAt = new Date(entry.createdAt);
+    const dayBefore = new Date(createdAt.getTime() - 24 * 60 * 60 * 1000);
+    const dayAfter = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+    const match = await prisma.applicationEntry.findFirst({
+      where: {
+        email: entry.email,
+        fullName: entry.fullName,
+        createdAt: { gte: dayBefore, lte: dayAfter },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    if (match) return match;
+  }
+
+  return null;
+}
+
+function getClearNoChangeMessage(entriesMatched) {
+  return entriesMatched > 0
+    ? "This backup already exists in the system. No new applications or files were imported."
+    : "The backup file did not contain any new application data to import.";
 }
 
 export async function POST(req) {
@@ -49,31 +80,6 @@ export async function POST(req) {
       let entriesCreated = 0;
       let entriesMatched = 0;
       let filesUploaded = 0;
-
-      // Helper to find an existing entry (no duplicate mode)
-      async function findExistingEntry(e) {
-        // 1) Exact id
-        if (e.id) {
-          const byId = await prisma.applicationEntry.findUnique({ where: { id: e.id } });
-          if (byId) return byId;
-        }
-        // 2) Heuristic: same email + fullName within +/- 1 day of createdAt
-        if (e.email && e.fullName && e.createdAt) {
-          const createdAt = new Date(e.createdAt);
-          const dayBefore = new Date(createdAt.getTime() - 24 * 60 * 60 * 1000);
-          const dayAfter = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
-          const match = await prisma.applicationEntry.findFirst({
-            where: {
-              email: e.email,
-              fullName: e.fullName,
-              createdAt: { gte: dayBefore, lte: dayAfter },
-            },
-            orderBy: { createdAt: "asc" },
-          });
-          if (match) return match;
-        }
-        return null;
-      }
 
       // Map each backup entry to an existing or newly created ApplicationEntry
       for (const e of entries) {
@@ -152,6 +158,31 @@ export async function POST(req) {
         }
       }
 
+			if (entriesCreated === 0 && filesUploaded === 0) {
+        await safeWriteAuditLog(req, {
+          category: "backup",
+          action: "backup.import",
+          status: "FAILURE",
+          summary: `${me.name || me.email} attempted to import a backup but no new records were available.`,
+          actorSnapshot: buildActorSnapshot(me),
+          targetType: "backup",
+          targetLabel: String(file.name || "Backup ZIP"),
+          details: { entriesMatched, entriesCreated, filesUploaded },
+        });
+				return NextResponse.json({ success: false, error: getClearNoChangeMessage(entriesMatched) }, { status: 409 });
+			}
+
+      await safeWriteAuditLog(req, {
+        category: "backup",
+        action: "backup.import",
+        status: "SUCCESS",
+        summary: `${me.name || me.email} imported a backup ZIP.`,
+        actorSnapshot: buildActorSnapshot(me),
+        targetType: "backup",
+        targetLabel: String(file.name || "Backup ZIP"),
+        details: { entriesMatched, entriesCreated, filesUploaded, format: "json" },
+      });
+
       return NextResponse.json({ success: true, entriesCreated, entriesMatched, filesUploaded });
     }
 
@@ -166,12 +197,15 @@ export async function POST(req) {
     const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
+    const idMap = new Map();
     let entriesCreated = 0;
+    let entriesMatched = 0;
     let filesUploaded = 0;
 
     for (const row of rows) {
       const rowId = row[idx("id")] || "";
       const data = {
+			id: rowId,
         fullName: row[idx("fullName")] || "",
         email: row[idx("email")] || "",
         phone: row[idx("phone")] || "",
@@ -181,19 +215,45 @@ export async function POST(req) {
         availableTime: row[idx("availableTime")] || "",
         availableDay: row[idx("availableDay")] || "",
         status: row[idx("status")] || "NEW",
+			createdAt: row[idx("createdAt")] || undefined,
       };
 
-      const created = await prisma.applicationEntry.create({ data });
-      entriesCreated += 1;
+      const existing = await findExistingEntry(data);
+      let targetId = existing?.id;
+      if (existing) {
+			entriesMatched += 1;
+      } else {
+			const created = await prisma.applicationEntry.create({
+				data: {
+					fullName: data.fullName,
+					email: data.email,
+					phone: data.phone,
+					address: data.address,
+					visaType: data.visaType,
+					age: data.age,
+					availableTime: data.availableTime,
+					availableDay: data.availableDay,
+					status: data.status || "NEW",
+					createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
+				},
+			});
+			targetId = created.id;
+			entriesCreated += 1;
+      }
+		idMap.set(rowId, targetId);
 
       // import files in /files/<entryId>/
-      const folder = zip.folder(`files/${rowId}`) || zip.folder(`files/${created.id}`);
+      const folder = zip.folder(`files/${rowId}`) || zip.folder(`files/${targetId}`);
       if (folder) {
         const files = Object.values(folder.files || {});
+			const existingFiles = await prisma.applicationFile.findMany({ where: { applicationId: targetId } });
+			const existingNames = new Set(existingFiles.map((file) => String(file.fileUrl || "").split("/").pop()).filter(Boolean));
         for (const zf of files) {
           if (zf.dir) continue;
+			const filename = zf.name.split("/").pop();
+			if (existingNames.has(filename)) continue;
           const fileBuffer = await zf.async("nodebuffer");
-          const path = `applications/${created.id}/${zf.name.split("/").pop()}`;
+          const path = `applications/${targetId}/${filename}`;
           const { error } = await supabase.storage
             .from(bucket)
             .upload(path, fileBuffer, { upsert: false });
@@ -201,20 +261,50 @@ export async function POST(req) {
             const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
             await prisma.applicationFile.create({
               data: {
-                applicationId: created.id,
+                applicationId: targetId,
                 fileUrl: pub?.publicUrl || `supabase://${bucket}/${path}`,
                 fileType: "application/octet-stream",
               },
             });
+				existingNames.add(filename);
             filesUploaded += 1;
           }
         }
       }
     }
 
-    return NextResponse.json({ success: true, entriesCreated, filesUploaded });
+		if (entriesCreated === 0 && filesUploaded === 0) {
+      await safeWriteAuditLog(req, {
+        category: "backup",
+        action: "backup.import",
+        status: "FAILURE",
+        summary: `${me.name || me.email} attempted to import a backup but no new records were available.`,
+        actorSnapshot: buildActorSnapshot(me),
+        targetType: "backup",
+        targetLabel: String(file.name || "Backup ZIP"),
+        details: { entriesMatched, entriesCreated, filesUploaded, format: "csv" },
+      });
+			return NextResponse.json({ success: false, error: getClearNoChangeMessage(entriesMatched) }, { status: 409 });
+		}
+
+    await safeWriteAuditLog(req, {
+      category: "backup",
+      action: "backup.import",
+      status: "SUCCESS",
+      summary: `${me.name || me.email} imported a backup ZIP.`,
+      actorSnapshot: buildActorSnapshot(me),
+      targetType: "backup",
+      targetLabel: String(file.name || "Backup ZIP"),
+      details: { entriesMatched, entriesCreated, filesUploaded, format: "csv" },
+    });
+
+    return NextResponse.json({ success: true, entriesCreated, entriesMatched, filesUploaded });
   } catch (err) {
     console.error("backup import error", err);
-    return NextResponse.json({ success: false, error: "Import failed" }, { status: 500 });
+		const message = err?.message || "Import failed";
+		const duplicateMessage = message.includes("already exists")
+			? "This backup could not be imported because the same application records already exist."
+			: message;
+    return NextResponse.json({ success: false, error: duplicateMessage }, { status: 500 });
   }
 }

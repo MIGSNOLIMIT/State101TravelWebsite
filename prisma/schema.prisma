@@ -44,6 +44,31 @@ model User {
   lockUntil     DateTime?
 }
 
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId Int?
+  actorName   String?
+  actorEmail  String?
+  actorRole   String?
+  category    String
+  action      String
+  status      String   @default("SUCCESS")
+  summary     String
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([category, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
 model Homepage {
   id                   Int      @id @default(autoincrement())
   heroTitle            String

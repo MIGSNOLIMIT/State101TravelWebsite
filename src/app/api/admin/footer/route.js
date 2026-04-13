@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdminSession } from "@/lib/auth";
+import { requireAdminRoles } from "@/lib/admin-access";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 // GET: Fetch footer info
 export async function GET() {
@@ -11,8 +12,9 @@ export async function GET() {
 
 // POST: Update footer info
 export async function POST(req) {
-  const session = await getAdminSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminRoles(["admin", "editor"]);
+  if (gate.error) return gate.error;
+  const { user } = gate;
   const body = await req.json();
   // Allow empty strings/arrays for all fields
   const address = typeof body.address === 'string' ? body.address : '';
@@ -39,5 +41,16 @@ export async function POST(req) {
       data: { address, phone, email: email.trim(), hours, socialLinks, logoUrl },
     });
   }
+  await safeWriteAuditLog(req, {
+    category: "content",
+    action: "content.footer.update",
+    status: "SUCCESS",
+    summary: `${user.name || user.email} updated the website footer.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: "footer",
+    targetId: footer.id,
+    targetLabel: "Website Footer",
+    details: { address, phone, email: email.trim(), hours, hasLogo: Boolean(logoUrl), socialLinksCount: rawLinks.length },
+  });
   return NextResponse.json(footer);
 }

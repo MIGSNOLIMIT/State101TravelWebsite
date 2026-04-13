@@ -13,6 +13,7 @@ export default function ServicesClient({ initialUserName, initialRole }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [mediaWarning, setMediaWarning] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
@@ -66,6 +67,11 @@ export default function ServicesClient({ initialUserName, initialRole }) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
+		if (mediaWarning) {
+			setMessage(mediaWarning);
+			setSaving(false);
+			return;
+		}
     const heroEmpty = !page?.heroImageUrl && (!page?.heroTitle || !page?.heroDesc);
     const anySectionEmpty = Array.isArray(page?.sections) && page.sections.some((section) => !section.title?.trim() || !section.description?.trim() || !section.buttonLabel?.trim() || !section.buttonLink?.trim());
     if (heroEmpty || anySectionEmpty) {
@@ -89,7 +95,7 @@ export default function ServicesClient({ initialUserName, initialRole }) {
         <AdminEditorCard title="Services Page Image">
           <AdminEditorLabel>Select an Image</AdminEditorLabel>
           <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
-            <MediaLibraryPicker value={page.heroImageUrl || ""} onChange={(value) => handleChange("heroImageUrl", value)} accept="image/*" folder="services" />
+            <MediaLibraryPicker value={page.heroImageUrl || ""} onChange={(value) => handleChange("heroImageUrl", value)} onValidationStateChange={(warning) => setMediaWarning(warning ? 'There is an invalid media file in the "Services Page Image" section. Changes will not be saved.' : "")} accept="image/*" folder="services" />
           </div>
           {page.heroImageUrl ? <Image src={page.heroImageUrl} alt="Services page hero" width={120} height={80} className="mt-3 rounded-md border border-[#c7d5eb] object-contain" /> : null}
         </AdminEditorCard>

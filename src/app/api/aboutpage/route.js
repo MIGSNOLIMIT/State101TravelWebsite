@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdminRoles } from "@/lib/admin-access";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,9 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const gate = await requireAdminRoles(["admin", "editor"]);
+    if (gate.error) return gate.error;
+    const { user } = gate;
     const { heroImageUrl, heroDescription, storyContent } = await req.json();
     // Allow clearing the hero image (null/empty string)
     const isEmpty = heroImageUrl === null || heroImageUrl === undefined || heroImageUrl === "";
@@ -48,6 +53,20 @@ export async function POST(req) {
         },
       });
     }
+    await safeWriteAuditLog(req, {
+    category: "content",
+    action: "content.about.update",
+    status: "SUCCESS",
+    summary: `${user.name || user.email} updated the About page.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: "about-page",
+    targetLabel: "About Page",
+    details: {
+      hasHeroImage: Boolean(heroImageUrl),
+      heroDescriptionLength: String(heroDescription || "").length,
+      storyContentLength: String(storyContent || "").length,
+    },
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: "Failed to update About page" }, { status: 500 });

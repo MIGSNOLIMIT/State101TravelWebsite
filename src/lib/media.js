@@ -151,3 +151,15 @@ export function validateFileAgainstAccept(file, accept = "") {
   }
   return "";
 }
+
+export function validateMediaItemAgainstAccept(item, accept = "") {
+  if (!accept) return "";
+  const type = item?.type || inferMediaTypeFromName(item?.name || item?.url);
+  if (accept === "image/*" && !isImageType(type)) {
+    return "Only image files can be selected here.";
+  }
+  if (accept === "video/*" && !isVideoType(type)) {
+    return "Only video files can be selected here.";
+  }
+  return "";
+}

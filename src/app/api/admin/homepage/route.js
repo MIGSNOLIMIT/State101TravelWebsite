@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { requireAdminRoles } from '@/lib/admin-access';
+import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 
 // GET: Fetch only image/video CMS fields
 export async function GET() {
@@ -41,6 +43,9 @@ export async function GET() {
 // POST: Update image/video CMS fields
 export async function POST(req) {
   try {
+    const gate = await requireAdminRoles(['admin', 'editor']);
+    if (gate.error) return gate.error;
+    const { user } = gate;
     const body = await req.json();
 
     const updateData = {
@@ -58,6 +63,22 @@ export async function POST(req) {
         data: updateData,
       });
     }
+
+    await safeWriteAuditLog(req, {
+    category: 'content',
+    action: 'content.homepage.update',
+    status: 'SUCCESS',
+    summary: `${user.name || user.email} updated homepage media content.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: 'homepage',
+    targetId: homepage.id,
+    targetLabel: 'Homepage',
+    details: {
+      heroImagesCount: updateData.heroImages.length,
+      testimonialsImagesCount: updateData.testimonialsImages.length,
+      hasVideo: Boolean(updateData.testimonialsVideoUrl),
+    },
+    });
 
     return NextResponse.json(homepage);
   } catch (err) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,17 @@ export async function POST(req) {
     const { title, category, content } = body;
     if (!title || !category || !content) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     const created = await prisma.knowledgebaseItem.create({ data: { title, category, content } });
+    await safeWriteAuditLog(req, {
+      category: "content",
+      action: "content.knowledgebase.create",
+      status: "SUCCESS",
+      summary: `${me.name || me.email} created knowledgebase article ${created.title}.`,
+      actorSnapshot: buildActorSnapshot(me),
+      targetType: "knowledgebase",
+      targetId: created.id,
+      targetLabel: created.title,
+      details: { category: created.category },
+    });
     return NextResponse.json(created, { status: 201 });
   } catch (e) {
     console.error("knowledgebase create error", e);

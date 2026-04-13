@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -17,6 +18,14 @@ export async function POST(req) {
     }
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
+		  await safeWriteAuditLog(req, {
+			  category: 'auth',
+			  action: 'auth.password_reset.request',
+			  status: 'FAILURE',
+			  summary: `Password reset was requested for an unknown account: ${String(email).trim().toLowerCase()}.`,
+			  actorSnapshot: { email: String(email).trim().toLowerCase() },
+			  details: { reason: 'unknown_email' },
+		  });
       // For security, always respond with success
       return NextResponse.json({ success: true });
     }
@@ -58,6 +67,16 @@ export async function POST(req) {
       html: `<p>You requested a password reset for your State101 admin account.</p>
         <p><a href="${resetUrl}">Click here to reset your password</a></p>
         <p>If you did not request this, please ignore this email.</p>`,
+    });
+    await safeWriteAuditLog(req, {
+    category: 'auth',
+    action: 'auth.password_reset.request',
+    status: 'SUCCESS',
+    summary: `${user.name || user.email} requested a password reset.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: 'user',
+    targetId: user.id,
+    targetLabel: user.name || user.email,
     });
     return NextResponse.json({ success: true });
   } catch (err) {

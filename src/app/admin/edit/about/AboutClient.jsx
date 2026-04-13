@@ -13,6 +13,7 @@ export default function AboutClient({ initialUserName, initialRole }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [mediaWarning, setMediaWarning] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
@@ -65,6 +66,11 @@ export default function AboutClient({ initialUserName, initialRole }) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
+		if (mediaWarning) {
+			setMessage(mediaWarning);
+			setSaving(false);
+			return;
+		}
     if (!data?.heroImageUrl) {
       setConfirmOpen(true);
       return;
@@ -84,6 +90,7 @@ export default function AboutClient({ initialUserName, initialRole }) {
               <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
                 <MediaLibraryPicker
                   value={data.heroImageUrl || ""}
+                  onValidationStateChange={(warning) => setMediaWarning(warning ? 'There is an invalid media file in the "About Page Banner" section. Changes will not be saved.' : "")}
                   onChange={(value) => {
                     const selected = Array.isArray(value) ? value[0] || "" : value || "";
                     setData((prev) => ({ ...prev, heroImageUrl: selected }));

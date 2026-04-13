@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMediaUsageSummary, requireAdminEditor } from "@/lib/admin-media";
 import { getStorageBucketName, getStorageClient } from "@/lib/supabase-storage";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +51,18 @@ export async function DELETE(req) {
       where: {
         OR: [{ storagePath: targetPath }, { url: mediaUrl || undefined }],
       },
+    });
+
+    await safeWriteAuditLog(req, {
+    category: "media",
+    action: "media.delete",
+    status: "SUCCESS",
+    summary: `${auth.user.name || auth.user.email} deleted media ${media?.name || mediaUrl || targetPath}.`,
+    actorSnapshot: buildActorSnapshot(auth.user),
+    targetType: "media",
+    targetId: media?.id || null,
+    targetLabel: media?.name || mediaUrl || targetPath,
+    details: { storagePath: targetPath, url: mediaUrl || null },
     });
 
     return NextResponse.json({ success: true });

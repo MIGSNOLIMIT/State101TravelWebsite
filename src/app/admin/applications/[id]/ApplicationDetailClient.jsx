@@ -6,6 +6,7 @@ import { Archive, ArrowLeft, Download, RotateCcw } from "lucide-react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { getApplicationStatusLabel } from "@/lib/application-status";
 import { archiveApplication, restoreApplication } from "@/lib/application";
+import { getApplicationVisaLabel } from "@/lib/application-visa";
 
 function formatDate(date) {
   if (!date) return "Unknown";
@@ -170,7 +171,7 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
                 <DetailField label="Email" value={item.email} />
                 <DetailField label="Phone Number" value={item.phone} />
                 <DetailField label="Address" value={item.address} />
-                <DetailField label="Visa Type" value={item.visaType} />
+                <DetailField label="Visa Type" value={getApplicationVisaLabel(item.visaType)} />
                 <DetailField label="Age" value={item.age ? String(item.age) : "-"} />
                 <DetailField label="Available Day" value={item.availableDay} />
                 <DetailField label="Available Time" value={item.availableTime} />

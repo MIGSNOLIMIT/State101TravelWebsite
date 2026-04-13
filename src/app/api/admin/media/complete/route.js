@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminEditor } from "@/lib/admin-media";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 import {
   createPublicMediaUrl,
   inferAltText,
@@ -81,6 +82,17 @@ export async function POST(req) {
         createdAt: record.createdAt,
       });
     }
+
+    await safeWriteAuditLog(req, {
+    category: "media",
+    action: "media.upload",
+    status: "SUCCESS",
+    summary: `${auth.user.name || auth.user.email} uploaded ${items.length} media file${items.length === 1 ? '' : 's'}.`,
+    actorSnapshot: buildActorSnapshot(auth.user),
+    targetType: "media",
+    targetLabel: items.length === 1 ? items[0].name : `${items.length} media files`,
+    details: { count: items.length, items: items.map((item) => ({ name: item.name, folder: item.folder, type: item.type })) },
+    });
 
     return NextResponse.json({ items });
   } catch (error) {

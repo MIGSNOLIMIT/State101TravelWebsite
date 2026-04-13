@@ -25,11 +25,12 @@ import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel } from "@/lib/appli
 const primaryNav = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/reports", label: "Reports", icon: BarChart3, adminOnly: true },
+  { href: "/admin/logs", label: "Audit Logs", icon: ScrollText, adminOnly: true },
   { href: "/admin/applications", label: "Applications", icon: FileText, adminOnly: true },
-  { href: "/admin/applications?status=NEW", label: getApplicationStatusLabel("NEW", "nav"), icon: Clock3, status: "NEW", adminOnly: true },
-  { href: "/admin/applications?status=IN_REVIEW", label: getApplicationStatusLabel("IN_REVIEW", "nav"), icon: Search, status: "IN_REVIEW", adminOnly: true },
-  { href: "/admin/applications?status=APPROVED", label: getApplicationStatusLabel("APPROVED", "nav"), icon: CheckCircle2, status: "APPROVED", adminOnly: true },
-  { href: "/admin/applications?status=DECLINED", label: getApplicationStatusLabel("DECLINED", "nav"), icon: XCircle, status: "DECLINED", adminOnly: true },
+  { href: "/admin/applications?status=NEW", label: getApplicationStatusLabel("NEW", "nav"), icon: Clock3, status: "NEW", subItem: true, adminOnly: true },
+  { href: "/admin/applications?status=IN_REVIEW", label: getApplicationStatusLabel("IN_REVIEW", "nav"), icon: Search, status: "IN_REVIEW", subItem: true, adminOnly: true },
+  { href: "/admin/applications?status=APPROVED", label: getApplicationStatusLabel("APPROVED", "nav"), icon: CheckCircle2, status: "APPROVED", subItem: true, adminOnly: true },
+  { href: "/admin/applications?status=DECLINED", label: getApplicationStatusLabel("DECLINED", "nav"), icon: XCircle, status: "DECLINED", subItem: true, adminOnly: true },
 ];
 
 const customizationNav = [
@@ -60,11 +61,12 @@ function isNavItemActive(item, pathname, searchParams) {
 
 function SidebarLink({ item, active, disabled = false }) {
   const Icon = item.icon;
+  const layoutClass = item.subItem ? "ml-4 pl-4 text-[13px]" : "";
 
   if (disabled) {
     return (
       <div
-        className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/35"
+        className={`flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/35 ${layoutClass}`}
         aria-disabled="true"
       >
         <Icon size={18} strokeWidth={2.1} />
@@ -77,7 +79,7 @@ function SidebarLink({ item, active, disabled = false }) {
     <Link
       href={item.href}
       className={[
-        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+        `flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${layoutClass}`,
         active
           ? "bg-[#0d255d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
           : "text-white/86 hover:bg-white/10 hover:text-white",

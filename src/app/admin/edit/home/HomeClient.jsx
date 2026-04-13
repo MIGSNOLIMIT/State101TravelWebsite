@@ -12,6 +12,7 @@ export default function HomeClient({ initialUserName, initialRole }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [mediaWarnings, setMediaWarnings] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
@@ -39,6 +40,10 @@ export default function HomeClient({ initialUserName, initialRole }) {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
+	const setMediaWarning = (sectionLabel, warning) => {
+		setMediaWarnings((prev) => ({ ...prev, [sectionLabel]: warning ? `There is an invalid media file in the \"${sectionLabel}\" section. Changes will not be saved.` : "" }));
+	};
+
   const doSave = async () => {
     setPendingSave(true);
     try {
@@ -59,6 +64,12 @@ export default function HomeClient({ initialUserName, initialRole }) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
+		const blockingWarnings = Object.values(mediaWarnings).filter(Boolean);
+		if (blockingWarnings.length) {
+			setMessage(blockingWarnings[0]);
+			setSaving(false);
+			return;
+		}
     const anyEmpty = !Array.isArray(data.heroImages) || data.heroImages.length === 0 || !Array.isArray(data.testimonialsImages) || data.testimonialsImages.length === 0 || !data.testimonialsVideoUrl;
     if (anyEmpty) {
       setConfirmOpen(true);
@@ -113,7 +124,7 @@ export default function HomeClient({ initialUserName, initialRole }) {
               <div>
                 <AdminEditorLabel>Select Multiple Images</AdminEditorLabel>
                 <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
-                  <MediaLibraryPicker value={data.heroImages} onChange={handleImageChange} multiple={true} accept="image/*" folder="home/hero" />
+                  <MediaLibraryPicker value={data.heroImages} onChange={handleImageChange} onValidationStateChange={(warning) => setMediaWarning("Home Page Images", warning)} multiple={true} accept="image/*" folder="home/hero" />
                 </div>
               </div>
             </div>
@@ -123,7 +134,7 @@ export default function HomeClient({ initialUserName, initialRole }) {
               <div>
                 <AdminEditorLabel>Select Multiple Images</AdminEditorLabel>
                 <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
-                  <MediaLibraryPicker value={data.testimonialsImages} onChange={handleTestimonialImagesChange} multiple={true} accept="image/*" folder="home/testimonials" />
+                  <MediaLibraryPicker value={data.testimonialsImages} onChange={handleTestimonialImagesChange} onValidationStateChange={(warning) => setMediaWarning("Our Successful Clients Images", warning)} multiple={true} accept="image/*" folder="home/testimonials" />
                 </div>
               </div>
             </div>
@@ -133,7 +144,7 @@ export default function HomeClient({ initialUserName, initialRole }) {
               <div>
                 <AdminEditorLabel>Select a Video</AdminEditorLabel>
                 <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
-                  <MediaLibraryPicker value={data.testimonialsVideoUrl} onChange={handleVideoChange} multiple={false} accept="video/*" folder="home/testimonials-video" />
+                  <MediaLibraryPicker value={data.testimonialsVideoUrl} onChange={handleVideoChange} onValidationStateChange={(warning) => setMediaWarning("Select a Video", warning)} multiple={false} accept="video/*" folder="home/testimonials-video" />
                 </div>
               </div>
 

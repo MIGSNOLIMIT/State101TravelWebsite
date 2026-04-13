@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 function requiredEnv(name) {
   const v = process.env[name];
@@ -36,6 +37,7 @@ export async function DELETE(req) {
 
     const file = await prisma.applicationFile.findUnique({ where: { id } });
     if (!file) return NextResponse.json({ error: "Not found" }, { status: 404 });
+		const application = await prisma.applicationEntry.findUnique({ where: { id: file.applicationId }, select: { fullName: true } });
 
     // Try delete from Supabase Storage
     try {
@@ -52,6 +54,17 @@ export async function DELETE(req) {
     }
 
     await prisma.applicationFile.delete({ where: { id } });
+    await safeWriteAuditLog(req, {
+      category: "applications",
+      action: "applications.file.delete",
+      status: "SUCCESS",
+      summary: `${me.name || me.email} deleted an uploaded file from ${application?.fullName || file.applicationId}.`,
+      actorSnapshot: buildActorSnapshot(me),
+      targetType: "application-file",
+      targetId: file.id,
+      targetLabel: application?.fullName || file.applicationId,
+      details: { fileType: file.fileType, fileUrl: file.fileUrl },
+    });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("file delete error", err);

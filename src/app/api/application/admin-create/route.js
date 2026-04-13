@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 import {
 	createApplicationEntry,
 	findDuplicateApplication,
@@ -39,6 +40,21 @@ export async function POST(req) {
 		}
 
 		const created = await createApplicationEntry(fields);
+		await safeWriteAuditLog(req, {
+			category: "applications",
+			action: "applications.create",
+			status: "SUCCESS",
+			summary: `${me.name || me.email} created a walk-in application for ${created.fullName}.`,
+			actorSnapshot: buildActorSnapshot(me),
+			targetType: "application",
+			targetId: created.id,
+			targetLabel: created.fullName,
+			details: {
+				email: created.email,
+				visaType: created.visaType,
+				status: created.status,
+			},
+		});
 		return NextResponse.json(created, { status: 201 });
 	} catch (error) {
 		console.error("admin create application error", error);

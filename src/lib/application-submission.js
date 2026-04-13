@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
+import { isSupportedApplicationVisaType, normalizeApplicationVisaType } from "@/lib/application-visa";
 
 export const APPLICATION_PHONE_REGEX = /^(09\d{9}|\+639\d{9})$/;
 
@@ -26,7 +27,7 @@ export function normalizeApplicationFields(fields = {}) {
 		email: normalizeApplicationEmail(fields.email),
 		phone: normalizeApplicationPhone(fields.phone),
 		address: String(fields.address || "").trim(),
-		visaType: String(fields.visaType || "").trim(),
+		visaType: normalizeApplicationVisaType(fields.visaType),
 		age: Math.max(0, Number.parseInt(fields.age, 10) || 0),
 		availableTime: String(fields.availableTime || "").trim(),
 		availableDay: String(fields.availableDay || "").trim(),
@@ -47,6 +48,10 @@ export function validateApplicationFields(fields) {
 
 	if (!APPLICATION_PHONE_REGEX.test(phone)) {
 		return "Invalid phone number";
+	}
+
+	if (!isSupportedApplicationVisaType(visaType)) {
+		return "Visa type must be either Canadian or American.";
 	}
 
 	return "";

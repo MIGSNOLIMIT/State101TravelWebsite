@@ -9,6 +9,7 @@ import {
   APPLICATION_SUCCESS_MESSAGE,
   validateApplicationUploadFile,
 } from "@/lib/application-files";
+import { APPLICATION_VISA_TYPES } from "@/lib/application-visa";
 
 
 export default function ApplicationFormPage({ searchParams }) {
@@ -112,7 +113,12 @@ export default function ApplicationFormPage({ searchParams }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Visa Type</label>
-                <input name="visaType" required className="mt-1 w-full rounded border px-3 py-2" placeholder="Canadian, Australian, etc." />
+                <select name="visaType" required className="mt-1 w-full rounded border px-3 py-2">
+                  <option value="">Select Visa Type</option>
+                  {APPLICATION_VISA_TYPES.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Age</label>

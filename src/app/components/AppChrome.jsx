@@ -6,8 +6,9 @@ import WebsiteViewTracker from "./WebsiteViewTracker";
 export default function AppChrome({ children, topBar, header, footer, bottomBar, floatingChat }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
+  const isStandaloneSystemPage = pathname === "/access-denied";
 
-  if (isAdminRoute) {
+  if (isAdminRoute || isStandaloneSystemPage) {
     return children;
   }
 

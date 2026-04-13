@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import JSZip from "jszip";
+import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,6 +40,18 @@ export async function GET(_req, { params }) {
     const id = params?.id;
     const entry = await prisma.applicationEntry.findUnique({ where: { id }, include: { files: true } });
     if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    await safeWriteAuditLog(_req, {
+    category: "applications",
+    action: "applications.export",
+    status: "SUCCESS",
+    summary: `${me.name || me.email} exported the application ZIP for ${entry.fullName}.`,
+    actorSnapshot: buildActorSnapshot(me),
+    targetType: "application",
+    targetId: entry.id,
+    targetLabel: entry.fullName,
+    details: { filesCount: entry.files.length, status: entry.status },
+    });
 
     const fullName = sanitizeName(entry.fullName || "Applicant");
     const dateStr = todayISO();

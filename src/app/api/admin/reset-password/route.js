@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
+import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 
 
 export async function POST(req) {
@@ -17,6 +18,17 @@ export async function POST(req) {
     await prisma.user.update({
       where: { id: user.id },
       data: { password: hashed, resetToken: null },
+    });
+    await safeWriteAuditLog(req, {
+    category: 'auth',
+    action: 'auth.password_reset.complete',
+    status: 'SUCCESS',
+    summary: `${user.name || user.email} completed a password reset.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: 'user',
+    targetId: user.id,
+    targetLabel: user.name || user.email,
+    details: { method: 'reset_token' },
     });
     return NextResponse.json({ success: true });
   } catch (err) {

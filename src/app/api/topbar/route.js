@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateApplicationStyleEmail } from '@/lib/email-validation';
+import { requireAdminRoles } from '@/lib/admin-access';
+import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 
 export async function GET() {
   try {
@@ -19,6 +21,9 @@ export async function GET() {
 // POST: Update TopBar info
 export async function POST(req) {
   try {
+    const gate = await requireAdminRoles(['admin', 'editor']);
+    if (gate.error) return gate.error;
+    const { user } = gate;
     const { address, phone, email } = await req.json();
     const normalizedEmail = typeof email === 'string' ? email.trim() : '';
     if (normalizedEmail) {
@@ -38,6 +43,17 @@ export async function POST(req) {
         data: { address, phone, email: normalizedEmail },
       });
     }
+    await safeWriteAuditLog(req, {
+    category: 'content',
+    action: 'content.topbar.update',
+    status: 'SUCCESS',
+    summary: `${user.name || user.email} updated the website top bar.`,
+    actorSnapshot: buildActorSnapshot(user),
+    targetType: 'topbar',
+    targetId: topbar.id,
+    targetLabel: 'Top Bar',
+    details: { address, phone, email: normalizedEmail },
+    });
     return NextResponse.json(topbar);
   } catch (err) {
     return NextResponse.json({ error: 'Failed to update TopBar.' }, { status: 500 });

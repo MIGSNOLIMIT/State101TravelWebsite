@@ -70,7 +70,6 @@ export default function ServicesPage() {
             header={section.title}
             description={section.description}
             reverse={index % 2 === 1}
-            lineColor={index % 2 === 0 ? "blue" : "red"}
             bgColor={index % 2 === 0 ? "gray" : "white"}
             buttonColor={index % 2 === 0 ? "blue" : "red"}
           />

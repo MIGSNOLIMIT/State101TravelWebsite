@@ -27,6 +27,7 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [mediaWarnings, setMediaWarnings] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
@@ -79,6 +80,13 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
     setNames((prev) => prev.map((name, nameIndex) => (nameIndex === index ? value : name)));
   };
 
+  const setMediaWarning = (index, warning) => {
+    setMediaWarnings((prev) => ({
+      ...prev,
+      [index]: warning ? `There is an invalid media file in the \"TOS Page Logo ${index + 1}\" section. Changes will not be saved.` : "",
+    }));
+  };
+
   const doSave = async () => {
     setPendingSave(true);
     try {
@@ -114,6 +122,12 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
+    const blockingWarnings = Object.values(mediaWarnings).filter(Boolean);
+    if (blockingWarnings.length) {
+      setMessage(blockingWarnings[0]);
+      setSaving(false);
+      return;
+    }
     const anyEmpty = !(terms.editorContent && terms.editorContent.trim()) || logos.some((logo) => !logo);
     if (anyEmpty) {
       setConfirmOpen(true);
@@ -160,6 +174,7 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
                     <MediaLibraryPicker
                       multiple={false}
                       value={logos[index] || ""}
+                      onValidationStateChange={(warning) => setMediaWarning(index, warning)}
                       onChange={(value) => handleLogoChange(index, "logo", value)}
                       accept="image/*"
                       folder="tos"

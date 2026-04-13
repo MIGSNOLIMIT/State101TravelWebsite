@@ -7,12 +7,10 @@ export default function AlternatingSection({
   header,
   description,
   reverse = false,   // controls swapping for alternating sections
-  lineColor = "blue", 
   bgColor = "white", 
   buttonColor = "blue" 
 }) {
   const bgClass = bgColor === "gray" ? "bg-gray-50" : "bg-white";
-  const lineClass = lineColor === "blue" ? "bg-blue-600" : "bg-red-600";
   const btnClass = buttonColor === "blue"
     ? "bg-blue-600 hover:bg-blue-700"
     : "bg-red-600 hover:bg-red-700";
@@ -33,7 +31,6 @@ export default function AlternatingSection({
 
         <div className="flex w-full flex-col justify-center text-center md:w-1/2 md:text-left">
           <h2 className="mb-2 text-2xl font-bold md:text-3xl">{header}</h2>
-          <div className={`mb-4 h-1 w-56 rounded sm:w-56 md:w-72 lg:w-[30rem] ${lineClass}`}></div>
           <p className="mb-6 text-gray-700">{description}</p>
           <div className="flex justify-center md:justify-start">
             <a

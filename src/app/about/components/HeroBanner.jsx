@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-export default function HeroBanner({ bannerSrc, description }) {
+export default function HeroBanner({ bannerSrc, title, description }) {
   // Validate src: must be absolute URL or start with '/'
   const isValidSrc =
     typeof bannerSrc === "string" &&
@@ -19,9 +19,12 @@ export default function HeroBanner({ bannerSrc, description }) {
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
       />
 
-      {description ? (
-        <div className="absolute inset-x-4 bottom-4 z-10 rounded-xl bg-black/45 px-4 py-3 text-white sm:inset-x-6 md:bottom-8 md:left-8 md:right-auto md:max-w-2xl md:px-6 md:py-4">
-          <p className="text-sm leading-relaxed md:text-lg">{description}</p>
+      <div className="absolute inset-0 bg-black/30"></div>
+
+      {(title || description) ? (
+        <div className="absolute bottom-4 left-4 right-4 z-10 text-white md:bottom-8 md:left-8 md:right-auto md:max-w-lg">
+          {title ? <h1 className="mb-2 text-3xl font-bold md:text-5xl">{title}</h1> : null}
+          {description ? <p className="text-sm md:text-lg">{description}</p> : null}
         </div>
       ) : null}
     </section>

@@ -23,7 +23,11 @@ export default async function AboutPage() {
   const heroSrc = aboutData?.heroImageUrl || undefined;
   return (
     <main className="bg-white">
-      <HeroBanner bannerSrc={heroSrc} description={aboutData?.heroDescription || ""} />
+      <HeroBanner
+        bannerSrc={heroSrc}
+        title="About Us"
+        description={aboutData?.heroDescription || ""}
+      />
       <OurStory content={aboutData?.storyContent || ""} />
     </main>
   );

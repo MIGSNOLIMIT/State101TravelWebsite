@@ -205,17 +205,15 @@ function buildLinePath(values, chartWidth, chartHeight, chartMax) {
 
 function CountCard({ count, status, icon: Icon, tone, onClick, disabled = false }) {
 	const palette = cardToneClasses[tone];
+	const interactive = typeof onClick === "function" && !disabled;
 
-	return (
-		<button
-			type="button"
-			onClick={disabled ? undefined : onClick}
-			disabled={disabled}
-			className={[
-				"rounded-[24px] border border-[#d5dce7] bg-white px-6 py-5 text-left transition",
-				disabled ? "cursor-default opacity-90" : `hover:-translate-y-0.5 hover:shadow-xl ${palette.ring}`,
-			].join(" ")}
-		>
+	const className = [
+		"rounded-[24px] border border-[#d5dce7] bg-white px-6 py-5 text-left transition",
+		interactive ? `hover:-translate-y-0.5 hover:shadow-xl ${palette.ring}` : "",
+	].join(" ");
+
+	const content = (
+		<>
 			<div className="flex justify-end">
 				<span className={`flex h-10 w-10 items-center justify-center rounded-full ${palette.icon}`}>
 					<Icon size={18} strokeWidth={2.3} />
@@ -223,6 +221,16 @@ function CountCard({ count, status, icon: Icon, tone, onClick, disabled = false 
 			</div>
 			<div className={`mt-2 text-5xl font-semibold leading-none ${palette.count}`}>{count}</div>
 			<div className={`mt-3 text-lg font-medium ${palette.label}`}>{APPLICATION_STATUS_SUMMARY_LABELS[status]}</div>
+		</>
+	);
+
+	if (!interactive) {
+		return <div className={className}>{content}</div>;
+	}
+
+	return (
+		<button type="button" onClick={onClick} className={className}>
+			{content}
 		</button>
 	);
 }

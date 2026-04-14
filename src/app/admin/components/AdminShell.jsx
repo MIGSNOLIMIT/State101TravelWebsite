@@ -39,7 +39,7 @@ const customizationNav = [
   { href: "/admin/edit/home", label: "Home Page", icon: House },
   { href: "/admin/edit/services", label: "Services Page", icon: BriefcaseBusiness },
   { href: "/admin/edit/about", label: "About Us Page", icon: CircleHelp },
-  { href: "/admin/edit/terms-of-service", label: "TOS Page", icon: ScrollText },
+  { href: "/admin/edit/terms-of-service", label: "Terms of Service Page", icon: ScrollText },
 ];
 
 const accountNav = [
@@ -96,6 +96,7 @@ export default function AdminShell({ children, title, userName, role }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const visiblePrimaryNav = primaryNav.filter((item) => !item.adminOnly || role === "admin");
   const visibleAccountNav = accountNav.filter((item) => !item.adminOnly || role === "admin");
 
   const onLogout = async () => {
@@ -126,12 +127,11 @@ export default function AdminShell({ children, title, userName, role }) {
 
         <nav className="flex-1 overflow-y-auto px-2 py-3 md:px-3">
           <div className="space-y-1">
-            {primaryNav.map((item) => (
+            {visiblePrimaryNav.map((item) => (
               <SidebarLink
                 key={item.href}
                 item={item}
-                disabled={item.adminOnly && role !== "admin"}
-                active={!(item.adminOnly && role !== "admin") && isNavItemActive(item, pathname, searchParams)}
+                active={isNavItemActive(item, pathname, searchParams)}
               />
             ))}
           </div>

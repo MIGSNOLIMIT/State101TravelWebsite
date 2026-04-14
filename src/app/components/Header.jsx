@@ -14,7 +14,7 @@ export default function Header() {
     { href: '/', label: 'Home', match: pathname === '/' },
     { href: '/services', label: 'Services', match: pathname?.startsWith('/services') },
     { href: '/about', label: 'About Us', match: pathname?.startsWith('/about') },
-    { href: '/tos', label: 'Terms of Services', match: pathname?.startsWith('/tos') },
+    { href: '/tos', label: 'Terms of Service', match: pathname?.startsWith('/tos') },
   ];
 
   useEffect(() => {

@@ -3,6 +3,61 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminRoles } from '@/lib/admin-access';
 import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 
+function looksLikeHtml(value) {
+	return /<[^>]+>/.test(String(value || ''));
+}
+
+function textToHtml(text) {
+	const lines = String(text || '').split(/\r?\n/);
+	const blocks = [];
+	let listType = null;
+	let listItems = [];
+
+	const flushList = () => {
+		if (!listType || !listItems.length) return;
+		const tag = listType === 'ol' ? 'ol' : 'ul';
+		blocks.push(`<${tag}>${listItems.map((item) => `<li>${item}</li>`).join('')}</${tag}>`);
+		listType = null;
+		listItems = [];
+	};
+
+	for (const rawLine of lines) {
+		const line = rawLine.trim();
+		if (!line) {
+			flushList();
+			continue;
+		}
+
+		const orderedMatch = line.match(/^(\d+)\.\s+(.+)$/);
+		const bulletMatch = line.match(/^(?:•|-)\s+(.+)$/);
+
+		if (orderedMatch) {
+			if (listType && listType !== 'ol') flushList();
+			listType = 'ol';
+			listItems.push(orderedMatch[2]);
+			continue;
+		}
+
+		if (bulletMatch) {
+			if (listType && listType !== 'ul') flushList();
+			listType = 'ul';
+			listItems.push(bulletMatch[1]);
+			continue;
+		}
+
+		flushList();
+		if (/^\d+\.\s+/.test(line)) {
+			blocks.push(`<h2>${line}</h2>`);
+			continue;
+		}
+
+		blocks.push(`<p>${line}</p>`);
+	}
+
+	flushList();
+	return blocks.join('');
+}
+
 function htmlToEditorText(html) {
 	let value = String(html || '');
 	value = value.replace(/<h2>(.*?)<\/h2>/gis, '$1\n');
@@ -18,10 +73,15 @@ export async function GET() {
 	try {
 		const tos = await prisma.termsOfService.findFirst();
 		const accreditations = await prisma.accreditation.findMany();
+		const editorContent = looksLikeHtml(tos?.editorContent || '')
+			? tos.editorContent
+			: looksLikeHtml(tos?.content || '')
+				? tos.content
+				: textToHtml(tos?.editorContent || '');
 		return NextResponse.json({
 			heading: tos?.heading || '',
 			content: tos?.content || '',
-			editorContent: tos?.editorContent || htmlToEditorText(tos?.content || ''),
+			editorContent: editorContent || htmlToEditorText(tos?.content || ''),
 			accreditations: accreditations.map(a => ({ logoUrl: a.logoUrl, name: a.name })),
 		});
 	} catch (error) {

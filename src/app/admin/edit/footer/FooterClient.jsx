@@ -2,23 +2,28 @@
 
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { AdminEditorCard, AdminEditorLabel, AdminEditorStrip, adminEditorInputClass } from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
 const SOCIAL_PLATFORMS = ["Facebook", "Instagram", "TikTok"];
+const PLACEHOLDER = "/images/placeholder_logo.png";
 
 export default function FooterClient({ initialUserName, initialRole }) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [hours, setHours] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
   const [socialLinks, setSocialLinks] = useState([
     { platform: "Facebook", url: "" },
     { platform: "Instagram", url: "" },
     { platform: "TikTok", url: "" },
   ]);
+  const [mediaWarning, setMediaWarning] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -40,6 +45,7 @@ export default function FooterClient({ initialUserName, initialRole }) {
         setEmail(json.email || "");
         setAddress(json.address || "");
         setHours(json.hours || "");
+        setLogoUrl(json.logoUrl || "");
 
         let links = [];
         try {
@@ -77,7 +83,7 @@ export default function FooterClient({ initialUserName, initialRole }) {
       const res = await fetch("/api/admin/footer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, email, address, hours, socialLinks }),
+        body: JSON.stringify({ phone, email, address, hours, logoUrl, socialLinks }),
       });
       if (res.ok) {
         setMessage("Footer updated!");
@@ -104,7 +110,13 @@ export default function FooterClient({ initialUserName, initialRole }) {
       return;
     }
 
-    const anyEmpty = !phone.trim() || !email.trim() || !address.trim() || !hours.trim() || socialLinks.some((link) => !link.url.trim());
+    if (mediaWarning) {
+      setMessage(mediaWarning);
+      setSaving(false);
+      return;
+    }
+
+    const anyEmpty = !phone.trim() || !email.trim() || !address.trim() || !hours.trim() || !logoUrl.trim() || socialLinks.some((link) => !link.url.trim());
     if (anyEmpty) {
       setConfirmOpen(true);
       return;
@@ -123,6 +135,25 @@ export default function FooterClient({ initialUserName, initialRole }) {
             <AdminEditorStrip title="Contact Us" />
             <div className="px-5 py-6 md:px-6">
               <div className="space-y-6">
+                <div>
+                  <AdminEditorLabel>Edit Footer Logo</AdminEditorLabel>
+                  <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
+                    <MediaLibraryPicker
+                      multiple={false}
+                      value={logoUrl || ""}
+                      onChange={(value) => setLogoUrl(value)}
+                      onValidationStateChange={(warning) => setMediaWarning(warning ? 'There is an invalid media file in the "Footer Logo" section. Changes will not be saved.' : "")}
+                      accept="image/*"
+                      folder="footer"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <AdminEditorLabel>Selected Footer Logo</AdminEditorLabel>
+                  <div className="mt-3 rounded-md border border-[#c7d5eb] bg-white px-4 py-3 dark:border-[#4d6f9f] dark:bg-slate-900">
+                    <Image src={logoUrl || PLACEHOLDER} alt="Footer logo preview" width={120} height={90} className="object-contain" />
+                  </div>
+                </div>
                 <div>
                   <AdminEditorLabel>Edit Address</AdminEditorLabel>
                   <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} className={adminEditorInputClass} placeholder="Enter address" />

@@ -123,8 +123,9 @@ model TopBar {
 }
 
 model Header {
-  id      Int    @id @default(autoincrement())
-  logoUrl String @default("")
+  id          Int    @id @default(autoincrement())
+  logoUrl     String @default("")
+  websiteName String @default("")
 }
 
 model Footer {

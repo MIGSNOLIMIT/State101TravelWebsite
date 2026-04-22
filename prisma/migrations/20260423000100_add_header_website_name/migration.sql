@@ -1,0 +1,2 @@
+ALTER TABLE "Header"
+ADD COLUMN "websiteName" TEXT NOT NULL DEFAULT '';

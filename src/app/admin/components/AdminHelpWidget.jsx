@@ -48,12 +48,22 @@ const HELP_CONTENT = [
     ],
   },
   {
+    match: (pathname) => pathname === "/admin/edit/header-logo",
+    title: "Header Guide",
+    intro: "This tab controls the logo and website name shown in the public header.",
+    items: [
+      "Use Select a Logo to choose the image you want visitors to see at the top of the website.",
+      "Use Website Name to change the text shown beside the logo in the header.",
+      "Preview the selected logo and read the website name once before saving so the branding looks correct.",
+    ],
+  },
+  {
     match: (pathname) => pathname === "/admin/edit/footer",
     title: "Footer Guide",
-    intro: "This tab controls the contact details and social links in the website footer.",
+    intro: "This tab controls the contact details, social links, and logo in the website footer.",
     items: [
-      "Update footer phone, email, and address information here.",
-      "Use the social link fields for the exact public page URLs only.",
+      "Update footer phone, email, address, and available hours here.",
+      "Use Select a Logo if you want to change the image shown on the right side of the footer.",
       "These values appear site-wide, so changes affect every public page.",
     ],
   },
@@ -90,11 +100,11 @@ const HELP_CONTENT = [
   {
     match: (pathname) => pathname === "/admin/edit/terms-of-service",
     title: "Terms Of Service Guide",
-    intro: "This tab controls legal and policy content displayed to visitors.",
+    intro: "This tab lets you update the Terms of Service page that visitors read on the website.",
     items: [
-      "Make updates carefully because this section affects public-facing legal copy.",
-      "Use clear language and review formatting after editing.",
-      "Coordinate legal wording changes before saving major revisions.",
+      "Type the content in the editor, then use the buttons above it to apply bold, italic, and underline.",
+      "Highlight the word or sentence you want to format first, then press the button for the style you want to apply.",
+      "Read the page once before saving to make sure the wording is clear and the text emphasis looks right for visitors.",
     ],
   },
   {

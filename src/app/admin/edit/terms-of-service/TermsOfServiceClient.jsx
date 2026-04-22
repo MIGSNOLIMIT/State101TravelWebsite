@@ -3,22 +3,13 @@
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
-import { AdminEditorCard, AdminEditorLabel, AdminEditorStrip, adminEditorInputClass, adminEditorReadonlyClass, adminEditorTextareaClass } from "@/app/admin/components/AdminEditorUi";
+import { AdminEditorCard, AdminEditorLabel, AdminEditorNote, AdminEditorStrip, adminEditorInputClass, adminEditorReadonlyClass } from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import RichTextEditor from "@/components/RichTextEditor";
 import Image from "next/image";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 
 const PLACEHOLDER = "/images/placeholder_logo.png";
-
-function tosTextToHtml(text) {
-  let value = text;
-  value = value.replace(/^(\d+\. .+)/gm, "<h2>$1</h2>");
-  value = value.replace(/^•\s*(.+)$/gm, "<ul><li>$1</li></ul>");
-  value = value.replace(/^\-\s*(.+)$/gm, "<ul><li>$1</li></ul>");
-  value = value.replace(/([^>])\n(?=[^<])/g, "$1<br>");
-  value = value.replace(/(<\/ul>)(\s*)<ul>/g, "");
-  return value;
-}
 
 export default function TermsOfServiceClient({ initialUserName, initialRole }) {
   const [terms, setTerms] = useState({ heading: "", editorContent: "" });
@@ -93,7 +84,7 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
       const htmlTerms = {
         heading: terms.heading,
         editorContent: terms.editorContent || "",
-        content: tosTextToHtml(terms.editorContent || ""),
+        content: terms.editorContent || "",
       };
       const base = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== "undefined" ? window.location.origin : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
@@ -152,10 +143,12 @@ export default function TermsOfServiceClient({ initialUserName, initialRole }) {
               </div>
               <div>
                 <AdminEditorLabel>Content</AdminEditorLabel>
-                <textarea
+                <AdminEditorNote className="mt-2 leading-6">
+                  Use the buttons above the editor to apply bold, italic, and underline formatting.
+                </AdminEditorNote>
+                <RichTextEditor
                   value={terms.editorContent || ""}
-                  onChange={(event) => setTerms((prev) => ({ ...prev, editorContent: event.target.value }))}
-                  className={`${adminEditorTextareaClass} min-h-[220px] resize-y`}
+                  onChange={(value) => setTerms((prev) => ({ ...prev, editorContent: value }))}
                   placeholder="Enter Terms of Service content here"
                 />
               </div>

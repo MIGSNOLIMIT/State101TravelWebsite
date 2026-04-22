@@ -35,6 +35,7 @@ const primaryNav = [
 
 const customizationNav = [
   { href: "/admin/edit/topbar", label: "Top Bar", icon: FileText },
+  { href: "/admin/edit/header-logo", label: "Header", icon: FileText },
   { href: "/admin/edit/footer", label: "Footer", icon: FileText },
   { href: "/admin/edit/home", label: "Home Page", icon: House },
   { href: "/admin/edit/services", label: "Services Page", icon: BriefcaseBusiness },

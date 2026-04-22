@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { EnvelopeIcon, PhoneIcon, MapPinIcon } from "@heroicons/react/24/solid";
 import { Facebook, Instagram } from "lucide-react";
 import { FaTiktok } from "react-icons/fa";
@@ -8,7 +9,7 @@ import { useEffect, useState } from "react";
 export default function Footer() {
   const [contact, setContact] = useState({ address: "", phone: "", email: "", hours: "" });
   const [socials, setSocials] = useState([]);
-  const [logoUrl, setLogoUrl] = useState("/images/logo.png");
+  const [logoUrl, setLogoUrl] = useState("");
 
   useEffect(() => {
     async function fetchFooter() {
@@ -29,7 +30,7 @@ export default function Footer() {
             links = [];
           }
           setSocials(Array.isArray(links) ? links.filter((l) => l && l.url) : []);
-          setLogoUrl(data.logoUrl || "/images/logo.png");
+          setLogoUrl(data.logoUrl || "");
         }
       } catch (err) {
         // fallback to defaults if needed
@@ -110,16 +111,16 @@ export default function Footer() {
             <h3 className="text-lg font-semibold underline mb-4">Navigation</h3>
             <ul className="space-y-3">
               <li>
-                <a href="/" className="hover:underline text-blue-200 font-semibold">Home</a>
+                <Link href="/" className="hover:underline text-blue-200 font-semibold">Home</Link>
               </li>
               <li>
-                <a href="/services" className="hover:underline text-blue-200 font-semibold">Services</a>
+                <Link href="/services" className="hover:underline text-blue-200 font-semibold">Services</Link>
               </li>
               <li>
-                <a href="/about" className="hover:underline text-blue-200 font-semibold">About Us</a>
+                <Link href="/about" className="hover:underline text-blue-200 font-semibold">About Us</Link>
               </li>
               <li>
-                <a href="/tos" className="hover:underline text-blue-200 font-semibold">Terms of Services</a>
+                <Link href="/tos" className="hover:underline text-blue-200 font-semibold">Terms of Services</Link>
               </li>
             </ul>
           </div>
@@ -131,7 +132,7 @@ export default function Footer() {
             <div className="block">
               <Image
                 src={logoUrl}
-                alt="State101 Travel Logo"
+                alt="Footer logo"
                 width={100}
                 height={100}
                 className="rounded-full object-cover cursor-pointer hover:opacity-80 transition"

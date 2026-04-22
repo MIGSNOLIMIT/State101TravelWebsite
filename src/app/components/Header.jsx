@@ -1,12 +1,14 @@
 "use client";
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
-  // Always use static logo and company name, never CMS
-  const logoUrl = '/images/logo.png';
-  const companyName = 'State101 Travel';
+  const [branding, setBranding] = useState({
+    logoUrl: '',
+    websiteName: '',
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
 
@@ -30,17 +32,55 @@ export default function Header() {
     checkAdmin();
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchBranding() {
+      try {
+        const res = await fetch('/api/admin/header', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (ignore) return;
+        setBranding({
+          logoUrl: data.logoUrl || '',
+          websiteName: data.websiteName || '',
+        });
+      } catch {
+        if (ignore) return;
+        setBranding({
+          logoUrl: '',
+          websiteName: '',
+        });
+      }
+    }
+
+    fetchBranding();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const logoUrl = branding.logoUrl || '';
+  const companyName = branding.websiteName || '';
+  const hasBranding = Boolean(logoUrl || companyName);
+
   return (
     <header className="bg-white shadow-md px-6 py-4 flex flex-col md:flex-row md:justify-between md:items-center">
       {/* Left: Logo + Company Name */}
-      <Link href="/" className="flex flex-col md:flex-row md:items-center md:space-x-3 items-center mb-4 md:mb-0">
-        <img
-          src={logoUrl}
-          alt={companyName + ' Logo'}
-          className="h-16 w-16 rounded-full object-cover mb-2 md:mb-0 cursor-pointer hover:opacity-80 transition"
-        />
-        <span className="text-2xl font-bold text-[#00008b] text-center md:text-left cursor-pointer hover:opacity-80 transition">{companyName}</span>
-      </Link>
+      {hasBranding ? (
+        <Link href="/" className="flex flex-col md:flex-row md:items-center md:space-x-3 items-center mb-4 md:mb-0">
+          {logoUrl ? (
+            <Image
+              src={logoUrl}
+              alt={(companyName || 'Website') + ' Logo'}
+              width={64}
+              height={64}
+              className="h-16 w-16 rounded-full object-cover mb-2 md:mb-0 cursor-pointer hover:opacity-80 transition"
+            />
+          ) : null}
+          {companyName ? <span className="text-2xl font-bold text-[#00008b] text-center md:text-left cursor-pointer hover:opacity-80 transition">{companyName}</span> : null}
+        </Link>
+      ) : null}
       {/* Navigation */}
       <nav className="flex flex-col md:flex-row items-center md:space-x-8 space-y-2 md:space-y-0 text-lg font-medium">
         {navItems.map((item) => (

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
+import { getApplicationStatusLabel } from "@/lib/application-status";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,7 @@ export async function PATCH(req, { params }) {
       category: "applications",
       action: "applications.status.update",
       status: "SUCCESS",
-      summary: `${actor.name || actor.email} changed ${existing?.fullName || updated.id} to ${status}.`,
+      summary: `${actor.name || actor.email} changed ${existing?.fullName || updated.id} to ${getApplicationStatusLabel(status)}.`,
       actorSnapshot: buildActorSnapshot(actor),
       targetType: "application",
       targetId: updated.id,

@@ -125,8 +125,8 @@ export default function ReportsClient({ initialUserName, initialRole }) {
                         report.topPages.map((page) => (
                           <div key={page.path} className="flex items-center justify-between rounded-[18px] border-2 border-[#9eb8e3] bg-white px-4 py-3 dark:border-[#5d7fb3] dark:bg-slate-900">
                             <div>
-                              <p className="font-medium text-slate-900 dark:text-slate-100">{page.path}</p>
-                              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Tracked public route</p>
+                              <p className="font-medium text-slate-900 dark:text-slate-100">{page.label || page.path}</p>
+                              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Tracked public page</p>
                             </div>
                             <span className="text-lg font-semibold text-[#164896]">{page.views}</span>
                           </div>

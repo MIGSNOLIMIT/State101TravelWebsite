@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@supabase/supabase-js";
+import { uploadApplicationFile } from "@/lib/application-storage";
 import { validateApplicationUploadFile } from "@/lib/application-files";
 import {
   createApplicationEntry,
@@ -12,36 +12,6 @@ import {
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-function requiredEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env ${name}`);
-  return v;
-}
-
-function sanitizeFilename(name = "file") {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-async function uploadToSupabase({ file, bucket, prefix = "applications" }) {
-  const arrayBuffer = await file.arrayBuffer();
-  const body = Buffer.from(arrayBuffer);
-  const safeName = sanitizeFilename(file.name || "upload.bin");
-  const path = `${prefix}/${Date.now()}_${safeName}`;
-
-  const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
-  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, body, { contentType: file.type || "application/octet-stream", upsert: false });
-  if (error) throw error;
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  const url = data?.publicUrl || `supabase://${bucket}/${path}`;
-  return { path, url };
-}
 
 export async function POST(req) {
   try {
@@ -131,9 +101,8 @@ export async function POST(req) {
 
     const uploaded = [];
     if (files.length > 0) {
-      const bucket = requiredEnv("SUPABASE_APPLICATION_BUCKET");
       for (const file of files) {
-        const { url, path } = await uploadToSupabase({ file, bucket, prefix: `applications/${entry.id}` });
+        const { url, path } = await uploadApplicationFile({ file, applicationId: entry.id });
         const rec = await prisma.applicationFile.create({
           data: {
             applicationId: entry.id,

@@ -16,6 +16,11 @@ export default function AlternatingSection({
     : "bg-red-600 hover:bg-red-700";
   const layoutClass = reverse ? "md:flex-row-reverse" : "md:flex-row";
 
+  const handleInquireNow = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("state101:open-chat"));
+  };
+
   return (
     <section className={`${bgClass} py-16`}>
       <div className={`mx-auto flex max-w-6xl flex-col items-center gap-8 px-4 sm:px-6 md:gap-12 ${layoutClass}`}>
@@ -33,14 +38,13 @@ export default function AlternatingSection({
           <h2 className="mb-2 text-2xl font-bold md:text-3xl">{header}</h2>
           <p className="mb-6 text-gray-700">{description}</p>
           <div className="flex justify-center md:justify-start">
-            <a
-              href="https://state101travel-ai-chatbot.streamlit.app/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={handleInquireNow}
               className={`${btnClass} flex w-full items-center justify-center rounded px-8 py-3 text-white sm:w-auto sm:px-10`}
             >
               Inquire Now
-            </a>
+            </button>
           </div>
         </div>
       </div>

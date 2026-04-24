@@ -6,6 +6,20 @@ export const dynamic = "force-dynamic";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+const TRACKED_PAGE_LABELS = {
+  "/": "Homepage",
+  "/home": "Homepage",
+  "/services": "Services Tab",
+  "/about": "About Us",
+  "/tos": "Terms of Service",
+  "/terms-of-service": "Terms of Service",
+};
+
+function getTrackedPageLabel(path) {
+  const normalized = String(path || "/").trim() || "/";
+  return TRACKED_PAGE_LABELS[normalized] || null;
+}
+
 function monthBucket(label, month) {
   return {
     label,
@@ -119,7 +133,8 @@ export async function GET(req) {
       },
       currentMonth: selectedMonth,
       topPages: [...topPages.entries()]
-        .map(([path, views]) => ({ path, views }))
+        .map(([path, views]) => ({ path, views, label: getTrackedPageLabel(path) }))
+        .filter((page) => Boolean(page.label))
         .sort((a, b) => b.views - a.views)
         .slice(0, 6),
       funnel: {

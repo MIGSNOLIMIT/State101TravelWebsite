@@ -5,6 +5,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { archiveApplication, restoreApplication } from "@/lib/application";
+import {
+  APPLICATION_ADDRESS_INITIAL_VALUES,
+  APPLICATION_ADDRESS_PROVINCES,
+  buildApplicationAddress,
+  getCitiesForProvince,
+} from "@/lib/application-address";
+import {
+  APPLICATION_FILE_ACCEPT,
+  APPLICATION_FILE_NOTE,
+  validateApplicationUploadFile,
+} from "@/lib/application-files";
 import { APPLICATION_VISA_TYPES, getApplicationVisaLabel } from "@/lib/application-visa";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import {
@@ -62,7 +73,7 @@ const INITIAL_WALK_IN_FORM = {
   fullName: "",
   email: "",
   phone: "",
-  address: "",
+  ...APPLICATION_ADDRESS_INITIAL_VALUES,
   visaType: "",
   age: "",
   availableTime: "",
@@ -79,6 +90,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [walkInSubmitting, setWalkInSubmitting] = useState(false);
   const [walkInForm, setWalkInForm] = useState(INITIAL_WALK_IN_FORM);
+  const [walkInFiles, setWalkInFiles] = useState([]);
   const [activeSection, setActiveSection] = useState(() => (searchParams.get("view") === "archived" ? "archived" : "active"));
   const [backupLoading, setBackupLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
@@ -89,6 +101,9 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   const [statusUpdatingId, setStatusUpdatingId] = useState("");
   const router = useRouter();
   const importInputRef = useRef(null);
+  const walkInFileInputRef = useRef(null);
+  const walkInCityOptions = getCitiesForProvince(walkInForm.province);
+  const walkInAddress = buildApplicationAddress(walkInForm);
 
   useEffect(() => {
     let ignore = false;
@@ -214,7 +229,30 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   };
 
   const onWalkInFieldChange = (field, value) => {
-    setWalkInForm((prev) => ({ ...prev, [field]: value }));
+    setWalkInForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "province") {
+        next.city = "";
+      }
+      return next;
+    });
+  };
+
+  const onWalkInFileChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    for (const file of files) {
+      const fileError = validateApplicationUploadFile(file);
+      if (fileError) {
+        setMsg(`${file.name}: ${fileError}`);
+        setMsgTone("error");
+        event.target.value = "";
+        setWalkInFiles([]);
+        return;
+      }
+    }
+
+    setMsg("");
+    setWalkInFiles(files);
   };
 
   const onCreateWalkIn = async (event) => {
@@ -223,10 +261,22 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
     setMsg("");
 
     try {
+      const formData = new FormData();
+      formData.set("fullName", walkInForm.fullName);
+      formData.set("email", walkInForm.email);
+      formData.set("phone", walkInForm.phone);
+      formData.set("address", walkInAddress);
+      formData.set("visaType", walkInForm.visaType);
+      formData.set("age", walkInForm.age);
+      formData.set("availableTime", walkInForm.availableTime);
+      formData.set("availableDay", walkInForm.availableDay);
+      for (const file of walkInFiles) {
+        formData.append("files", file);
+      }
+
       const res = await fetch("/api/application/admin-create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(walkInForm),
+        body: formData,
       });
 
       const json = await res.json().catch(() => ({}));
@@ -238,6 +288,10 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
       setItems((prev) => [json, ...prev]);
       setWalkInForm(INITIAL_WALK_IN_FORM);
+      setWalkInFiles([]);
+      if (walkInFileInputRef.current) {
+        walkInFileInputRef.current.value = "";
+      }
       setWalkInOpen(false);
       setMsg("Walk-in application added successfully.");
       setMsgTone("success");
@@ -461,7 +515,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Full Name
+                    Full Name *
                     <input
                       type="text"
                       required
@@ -473,7 +527,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Email
+                    Email *
                     <input
                       type="email"
                       required
@@ -485,7 +539,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Phone
+                    Phone *
                     <input
                       type="text"
                       required
@@ -497,19 +551,80 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Address
+                    Building/Unit
                     <input
                       type="text"
-                      required
-                      value={walkInForm.address}
-                      onChange={(event) => onWalkInFieldChange("address", event.target.value)}
+                      value={walkInForm.buildingUnit}
+                      onChange={(event) => onWalkInFieldChange("buildingUnit", event.target.value)}
                       className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
-                      placeholder="City / Province"
+                      placeholder="Unit 12B"
                     />
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Visa Type
+                    Street *
+                    <input
+                      type="text"
+                      required
+                      value={walkInForm.street}
+                      onChange={(event) => onWalkInFieldChange("street", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="Street address"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Barangay *
+                    <input
+                      type="text"
+                      required
+                      value={walkInForm.barangay}
+                      onChange={(event) => onWalkInFieldChange("barangay", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="Barangay"
+                    />
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Province *
+                    <input
+                      type="text"
+                      list="walkin-province-options"
+                      required
+                      value={walkInForm.province}
+                      onChange={(event) => onWalkInFieldChange("province", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder="Type or select a province"
+                      autoComplete="off"
+                    />
+                    <datalist id="walkin-province-options">
+                      {APPLICATION_ADDRESS_PROVINCES.map((option) => (
+                        <option key={option.value} value={option.value} />
+                      ))}
+                    </datalist>
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    City *
+                    <input
+                      type="text"
+                      list="walkin-city-options"
+                      required
+                      value={walkInForm.city}
+                      onChange={(event) => onWalkInFieldChange("city", event.target.value)}
+                      className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
+                      placeholder={walkInForm.province ? "Type or select a city" : "Type a province first for matching city suggestions"}
+                      autoComplete="off"
+                    />
+                    <datalist id="walkin-city-options">
+                      {walkInCityOptions.map((option) => (
+                        <option key={option} value={option} />
+                      ))}
+                    </datalist>
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Visa Type *
                     <select
                       required
                       value={walkInForm.visaType}
@@ -524,7 +639,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Age
+                    Age *
                     <input
                       type="number"
                       min="1"
@@ -536,7 +651,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Available Time
+                    Available Time *
                     <select
                       required
                       value={walkInForm.availableTime}
@@ -551,7 +666,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Available Day
+                    Available Day *
                     <select
                       required
                       value={walkInForm.availableDay}
@@ -566,6 +681,20 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                       <option value="Friday">Friday</option>
                       <option value="Saturday">Saturday</option>
                     </select>
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 md:col-span-2 xl:col-span-4">
+                    Attach File
+                    <input
+                      ref={walkInFileInputRef}
+                      type="file"
+                      name="files"
+                      multiple
+                      accept={APPLICATION_FILE_ACCEPT}
+                      onChange={onWalkInFileChange}
+                      className="mt-1 block w-full text-sm text-slate-700 file:mr-3 file:rounded file:border-0 file:bg-[#164896] file:px-4 file:py-2 file:text-white hover:file:bg-[#103773]"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">{APPLICATION_FILE_NOTE}</p>
                   </label>
                 </div>
 
@@ -832,9 +961,9 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
       <ConfirmDialog
         open={Boolean(confirmAction)}
-        title={confirmAction?.status === "APPROVED" ? "Approve application?" : "Decline application?"}
-        message={confirmAction?.status === "APPROVED" ? "Are you sure you want to approve this applicant?" : "Are you sure you want to decline this applicant?"}
-        confirmText={confirmAction?.status === "APPROVED" ? "Approve" : "Decline"}
+        title={confirmAction?.status === "APPROVED" ? "Approve application?" : "Reject application?"}
+        message={confirmAction?.status === "APPROVED" ? "Are you sure you want to approve this applicant?" : "Are you sure you want to reject this applicant?"}
+        confirmText={confirmAction?.status === "APPROVED" ? "Approve" : "Reject"}
         cancelText="Cancel"
         onCancel={() => setConfirmAction(null)}
         onConfirm={async () => {

@@ -21,16 +21,17 @@ import {
   XCircle,
 } from "lucide-react";
 import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel } from "@/lib/application-status";
+import BackupArchiveNotice from "./BackupArchiveNotice";
 
 const primaryNav = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3, adminOnly: true },
-  { href: "/admin/logs", label: "Audit Logs", icon: ScrollText, adminOnly: true },
   { href: "/admin/applications", label: "Applications", icon: FileText, adminOnly: true },
   { href: "/admin/applications?status=NEW", label: getApplicationStatusLabel("NEW", "nav"), icon: Clock3, status: "NEW", subItem: true, adminOnly: true },
   { href: "/admin/applications?status=IN_REVIEW", label: getApplicationStatusLabel("IN_REVIEW", "nav"), icon: Search, status: "IN_REVIEW", subItem: true, adminOnly: true },
   { href: "/admin/applications?status=APPROVED", label: getApplicationStatusLabel("APPROVED", "nav"), icon: CheckCircle2, status: "APPROVED", subItem: true, adminOnly: true },
   { href: "/admin/applications?status=DECLINED", label: getApplicationStatusLabel("DECLINED", "nav"), icon: XCircle, status: "DECLINED", subItem: true, adminOnly: true },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3, adminOnly: true },
+  { href: "/admin/logs", label: "Audit Logs", icon: ScrollText, adminOnly: true },
 ];
 
 const customizationNav = [
@@ -177,6 +178,8 @@ export default function AdminShell({ children, title, userName, role }) {
               <div className="mt-4 h-2 rounded-full bg-[#5d8ed3]" />
             </div>
           </section>
+
+          {role === "admin" ? <BackupArchiveNotice /> : null}
 
           {children}
         </main>

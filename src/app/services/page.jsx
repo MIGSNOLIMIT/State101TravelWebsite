@@ -73,10 +73,9 @@ export default function ServicesPage() {
             bgColor={index % 2 === 0 ? "gray" : "white"}
             buttonColor={index % 2 === 0 ? "blue" : "red"}
           />
-          {/* Insert Application Form after the Short Term Training (3rd) section in hardcoded fallback */}
-          {!page?.sections?.length && index === 2 ? <ApplicationFormEmbed /> : null}
         </React.Fragment>
       ))}
+      <ApplicationFormEmbed />
       <WhyChoose />
     </main>
   );

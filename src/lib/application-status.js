@@ -4,17 +4,15 @@ export const APPLICATION_STATUS_LABELS = {
   NEW: "Recent",
   IN_REVIEW: "In-Review",
   APPROVED: "Approved",
-  DECLINED: "Declined",
+  DECLINED: "Rejected",
 };
 
 export const APPLICATION_STATUS_NAV_LABELS = {
   ...APPLICATION_STATUS_LABELS,
-  DECLINED: "Rejected",
 };
 
 export const APPLICATION_STATUS_SUMMARY_LABELS = {
   ...APPLICATION_STATUS_LABELS,
-  DECLINED: "Rejected",
 };
 
 export const APPLICATION_STATUS_OPTIONS = APPLICATION_STATUS_ORDER.map((value) => ({
@@ -26,15 +24,15 @@ export const APPLICATION_STATUS_ACTIONS = {
   NEW: [
     { status: "IN_REVIEW", label: "Move to In-Review", tone: "review" },
     { status: "APPROVED", label: "Approve", tone: "approved" },
-    { status: "DECLINED", label: "Decline", tone: "declined" },
+    { status: "DECLINED", label: "Reject", tone: "declined" },
   ],
   IN_REVIEW: [
     { status: "APPROVED", label: "Approve", tone: "approved" },
-    { status: "DECLINED", label: "Decline", tone: "declined" },
+    { status: "DECLINED", label: "Reject", tone: "declined" },
   ],
   APPROVED: [
     { status: "IN_REVIEW", label: "Move to In-Review", tone: "review" },
-    { status: "DECLINED", label: "Decline", tone: "declined" },
+    { status: "DECLINED", label: "Reject", tone: "declined" },
   ],
   DECLINED: [
     { status: "IN_REVIEW", label: "Move to In-Review", tone: "review" },

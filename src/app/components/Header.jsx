@@ -101,6 +101,7 @@ export default function Header() {
         {isAdmin && (
           <Link href="/admin/dashboard" className="text-white bg-[#00008b] hover:bg-[#000070] px-4 py-2 rounded font-semibold transition">Dashboard</Link>
         )}
+        <Link href="/services#application-form" className="text-white bg-[#8B1E1E] hover:bg-[#731818] px-4 py-2 rounded font-semibold transition">Apply</Link>
       </nav>
     </header>
   );

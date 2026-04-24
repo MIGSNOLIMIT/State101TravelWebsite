@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export default function FloatingChat() {
-  const chatbotUrl = "https://state101travel-ai-chatbot.streamlit.app/?embed=true";
+  const chatbotUrl = "https://state101-travel-chatbot.streamlit.app/?embed=true";
 
   const [sessionActive, setSessionActive] = useState(false);
   const [open, setOpen] = useState(false);
@@ -83,6 +83,17 @@ export default function FloatingChat() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
+
+  useEffect(() => {
+    const onOpenChat = () => {
+      setShowIntro(false);
+      setSessionActive(true);
+      setOpen(true);
+    };
+
+    window.addEventListener("state101:open-chat", onOpenChat);
+    return () => window.removeEventListener("state101:open-chat", onOpenChat);
+  }, []);
 
   const basePanelClass =
     "fixed z-50 bg-white shadow-2xl border border-gray-200 flex flex-col overflow-hidden rounded-none sm:rounded-xl";

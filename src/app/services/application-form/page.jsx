@@ -9,6 +9,12 @@ import {
   APPLICATION_SUCCESS_MESSAGE,
   validateApplicationUploadFile,
 } from "@/lib/application-files";
+import {
+  APPLICATION_ADDRESS_INITIAL_VALUES,
+  APPLICATION_ADDRESS_PROVINCES,
+  buildApplicationAddress,
+  getCitiesForProvince,
+} from "@/lib/application-address";
 import { APPLICATION_VISA_TYPES } from "@/lib/application-visa";
 
 
@@ -17,7 +23,21 @@ export default function ApplicationFormPage({ searchParams }) {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(errorParam || "");
+  const [address, setAddress] = useState(APPLICATION_ADDRESS_INITIAL_VALUES);
   const formRef = useRef();
+
+  const cityOptions = getCitiesForProvince(address.province);
+  const composedAddress = buildApplicationAddress(address);
+
+  function handleAddressChange(field, value) {
+    setAddress((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "province") {
+        next.city = "";
+      }
+      return next;
+    });
+  }
 
   function handleFileChange(e) {
     setError("");
@@ -39,6 +59,7 @@ export default function ApplicationFormPage({ searchParams }) {
     setSuccess(false);
     const form = formRef.current;
     const formData = new FormData(form);
+    formData.set("address", composedAddress);
     const files = formData.getAll("files");
     for (const file of files) {
       if (!file || typeof file.size !== "number" || file.size === 0) continue;
@@ -58,6 +79,7 @@ export default function ApplicationFormPage({ searchParams }) {
       if (res.ok) {
         setSuccess(true);
         form.reset();
+        setAddress(APPLICATION_ADDRESS_INITIAL_VALUES);
       } else {
         const err = await res.json().catch(() => ({}));
         setError(err?.error || "Submission failed");
@@ -85,13 +107,14 @@ export default function ApplicationFormPage({ searchParams }) {
             <div className="mb-6 rounded bg-red-100 text-red-800 px-4 py-3">{error}</div>
           )}
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+            <input type="hidden" name="address" value={composedAddress} readOnly />
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                <label className="block text-sm font-medium text-gray-700">Full Name *</label>
                 <input name="fullName" required className="mt-1 w-full rounded border px-3 py-2" placeholder="Juan Dela Cruz" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-gray-700">Email *</label>
                 <input
                   type="email"
                   name="email"
@@ -104,15 +127,41 @@ export default function ApplicationFormPage({ searchParams }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Phone</label>
+                <label className="block text-sm font-medium text-gray-700">Phone *</label>
                 <input name="phone" required className="mt-1 w-full rounded border px-3 py-2" placeholder="0917 123 4567" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Address</label>
-                <input name="address" required className="mt-1 w-full rounded border px-3 py-2" placeholder="City / Province" />
+                <label className="block text-sm font-medium text-gray-700">Building/Unit</label>
+                <input value={address.buildingUnit} onChange={(event) => handleAddressChange("buildingUnit", event.target.value)} className="mt-1 w-full rounded border px-3 py-2" placeholder="Unit 12B" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Visa Type</label>
+                <label className="block text-sm font-medium text-gray-700">Street *</label>
+                <input required value={address.street} onChange={(event) => handleAddressChange("street", event.target.value)} className="mt-1 w-full rounded border px-3 py-2" placeholder="Street address" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Barangay *</label>
+                <input required value={address.barangay} onChange={(event) => handleAddressChange("barangay", event.target.value)} className="mt-1 w-full rounded border px-3 py-2" placeholder="Barangay" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Province *</label>
+                <input type="text" list="application-page-province-options" required value={address.province} onChange={(event) => handleAddressChange("province", event.target.value)} className="mt-1 w-full rounded border px-3 py-2" placeholder="Type or select a province" autoComplete="off" />
+                <datalist id="application-page-province-options">
+                  {APPLICATION_ADDRESS_PROVINCES.map((option) => (
+                    <option key={option.value} value={option.value} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">City *</label>
+                <input type="text" list="application-page-city-options" required value={address.city} onChange={(event) => handleAddressChange("city", event.target.value)} className="mt-1 w-full rounded border px-3 py-2" placeholder={address.province ? "Type or select a city" : "Type a province first for matching city suggestions"} autoComplete="off" />
+                <datalist id="application-page-city-options">
+                  {cityOptions.map((option) => (
+                    <option key={option} value={option} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Visa Type *</label>
                 <select name="visaType" required className="mt-1 w-full rounded border px-3 py-2">
                   <option value="">Select Visa Type</option>
                   {APPLICATION_VISA_TYPES.map((option) => (
@@ -121,15 +170,15 @@ export default function ApplicationFormPage({ searchParams }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Age</label>
+                <label className="block text-sm font-medium text-gray-700">Age *</label>
                 <input type="number" name="age" min={1} required className="mt-1 w-full rounded border px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Available Time</label>
+                <label className="block text-sm font-medium text-gray-700">Available Time *</label>
                 <input name="availableTime" required className="mt-1 w-full rounded border px-3 py-2" placeholder="9AM - 12PM" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Available Day</label>
+                <label className="block text-sm font-medium text-gray-700">Available Day *</label>
                 <select name="availableDay" required className="mt-1 w-full rounded border px-3 py-2">
                   <option value="">Select Day</option>
                   <option value="Monday">Monday</option>

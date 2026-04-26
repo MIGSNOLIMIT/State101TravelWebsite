@@ -1,4 +1,5 @@
 import React from "react";
+import { getReadMoreLink } from "@/lib/services-navigation";
 
 export default function ServicesPreview({ servicesData }) {
   const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || '';
@@ -107,7 +108,10 @@ export default function ServicesPreview({ servicesData }) {
                 </ul>
                 <div className="mt-auto flex justify-center">
                   <a
-                    href={service.ctaLink || '/services'}
+                    href={getReadMoreLink({
+                      ...service,
+                      link: service.ctaLink,
+                    })}
                     className={`${service.title === 'Canada' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white px-4 py-2 rounded`}
                     style={{ fontFamily: 'Almarai' }}
                   >

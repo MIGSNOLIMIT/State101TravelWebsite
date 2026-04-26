@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, CheckCircle2, Clock3, Download, Files, Loader2, Plus, RotateCcw, Search, ShieldAlert, XCircle } from "lucide-react";
+import { Archive, CalendarClock, CheckCircle2, Clock3, Download, Files, Loader2, Plus, RotateCcw, Search, ShieldAlert, XCircle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
@@ -16,14 +16,20 @@ import {
   APPLICATION_FILE_NOTE,
   validateApplicationUploadFile,
 } from "@/lib/application-files";
-import { APPLICATION_VISA_TYPES, getApplicationVisaLabel } from "@/lib/application-visa";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import {
+  DEFAULT_APPLICATION_AVAILABLE_DAYS,
+  DEFAULT_APPLICATION_TIME_SLOTS,
+  DEFAULT_APPLICATION_VISA_TYPES,
+  normalizeApplicationFormSettings,
+} from "@/lib/application-form-settings";
+import { getApplicationVisaLabel, toApplicationVisaOptions } from "@/lib/application-visa";
 import {
   APPLICATION_STATUS_ACTIONS,
   APPLICATION_STATUS_ORDER,
   APPLICATION_STATUS_SUMMARY_LABELS,
   getApplicationStatusLabel,
   isApplicationStatus,
+  normalizeApplicationStatus,
 } from "@/lib/application-status";
 
 const STATUS_CARD_META = {
@@ -41,6 +47,13 @@ const STATUS_CARD_META = {
     labelClass: "text-amber-600",
     activeClass: "border-amber-300 bg-amber-50 shadow-[0_12px_24px_rgba(217,119,6,0.18)]",
   },
+  SCHEDULED: {
+    icon: CalendarClock,
+    iconClass: "bg-blue-100 text-blue-700",
+    countClass: "text-blue-700",
+    labelClass: "text-blue-600",
+    activeClass: "border-blue-300 bg-blue-50 shadow-[0_12px_24px_rgba(37,99,235,0.18)]",
+  },
   APPROVED: {
     icon: CheckCircle2,
     iconClass: "bg-green-100 text-green-700",
@@ -48,7 +61,7 @@ const STATUS_CARD_META = {
     labelClass: "text-green-600",
     activeClass: "border-green-300 bg-green-50 shadow-[0_12px_24px_rgba(22,163,74,0.18)]",
   },
-  DECLINED: {
+  PENDING: {
     icon: XCircle,
     iconClass: "bg-red-100 text-red-700",
     countClass: "text-red-700",
@@ -60,13 +73,23 @@ const STATUS_CARD_META = {
 const ACTION_BUTTON_STYLES = {
   neutral: "border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50",
   review: "border-amber-300 text-amber-700 hover:bg-amber-50",
+  scheduled: "border-blue-300 text-blue-700 hover:bg-blue-50",
   approved: "border-green-300 text-green-700 hover:bg-green-50",
-  declined: "border-red-300 text-red-700 hover:bg-red-50",
+  pending: "border-red-300 text-red-700 hover:bg-red-50",
 };
 
 function formatDate(date) {
   if (!date) return "Unknown";
   return new Date(date).toLocaleString();
+}
+
+function toDateTimeLocalValue(date) {
+  if (!date) return "";
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return "";
+
+  const timezoneOffset = value.getTimezoneOffset() * 60 * 1000;
+  return new Date(value.getTime() - timezoneOffset).toISOString().slice(0, 16);
 }
 
 const INITIAL_WALK_IN_FORM = {
@@ -91,11 +114,18 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   const [walkInSubmitting, setWalkInSubmitting] = useState(false);
   const [walkInForm, setWalkInForm] = useState(INITIAL_WALK_IN_FORM);
   const [walkInFiles, setWalkInFiles] = useState([]);
+  const [formSettings, setFormSettings] = useState(() =>
+    normalizeApplicationFormSettings({
+      applicationAvailableDays: DEFAULT_APPLICATION_AVAILABLE_DAYS,
+      applicationVisaTypes: DEFAULT_APPLICATION_VISA_TYPES,
+      applicationTimeSlots: DEFAULT_APPLICATION_TIME_SLOTS,
+    })
+  );
   const [activeSection, setActiveSection] = useState(() => (searchParams.get("view") === "archived" ? "archived" : "active"));
   const [backupLoading, setBackupLoading] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
+  const [statusDialog, setStatusDialog] = useState(null);
   const [activeStatus, setActiveStatus] = useState(() => {
-    const value = searchParams.get("status");
+    const value = normalizeApplicationStatus(searchParams.get("status"));
     return isApplicationStatus(value) ? value : "NEW";
   });
   const [statusUpdatingId, setStatusUpdatingId] = useState("");
@@ -104,6 +134,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   const walkInFileInputRef = useRef(null);
   const walkInCityOptions = getCitiesForProvince(walkInForm.province);
   const walkInAddress = buildApplicationAddress(walkInForm);
+  const visaTypeOptions = useMemo(() => toApplicationVisaOptions(formSettings.visaTypes), [formSettings.visaTypes]);
 
   useEffect(() => {
     let ignore = false;
@@ -111,16 +142,25 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
     async function load() {
       setLoading(true);
       try {
-        const listRes = await fetch("/api/application/list", { cache: "no-store" });
+        const [listRes, settingsRes] = await Promise.all([
+          fetch("/api/application/list", { cache: "no-store" }),
+          fetch("/api/admin/services-page", { cache: "no-store" }),
+        ]);
 
         if (!listRes.ok) {
           throw new Error("Failed to load applications");
         }
 
-        const json = await listRes.json();
+        const [json, settingsJson] = await Promise.all([
+          listRes.json(),
+          settingsRes.ok ? settingsRes.json() : Promise.resolve(null),
+        ]);
         if (ignore) return;
 
         setItems(json);
+        if (settingsJson) {
+          setFormSettings(normalizeApplicationFormSettings(settingsJson));
+        }
         setMsg("");
         setMsgTone("error");
       } catch {
@@ -140,7 +180,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   }, []);
 
   useEffect(() => {
-    const value = searchParams.get("status");
+    const value = normalizeApplicationStatus(searchParams.get("status"));
     setActiveStatus(isApplicationStatus(value) ? value : "NEW");
     setActiveSection(searchParams.get("view") === "archived" ? "archived" : "active");
   }, [searchParams]);
@@ -169,36 +209,44 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
     }
   };
 
-  const doChangeStatus = async (id, status) => {
+  const doChangeStatus = async ({ id, status, note, scheduledAt }) => {
     setStatusUpdatingId(id);
     try {
       const res = await fetch(`/api/application/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, note, scheduledAt }),
       });
       if (res.ok) {
-        setItems((prev) => prev.map((it) => (it.id === id ? { ...it, status } : it)));
+        const updated = await res.json();
+        setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...updated } : it)));
+        setMsg(`Application moved to ${getApplicationStatusLabel(updated.status)}.`);
+        setMsgTone("success");
+        return true;
       } else {
         const err = await res.json().catch(() => ({}));
         setMsg(err?.error || "Failed to update status");
         setMsgTone("error");
+        return false;
       }
     } catch {
       setMsg("Failed to update status");
       setMsgTone("error");
+      return false;
     } finally {
       setStatusUpdatingId("");
     }
   };
 
-  const onChangeStatus = async (id, status) => {
-    if (["APPROVED", "DECLINED"].includes(status)) {
-      setConfirmAction({ id, status });
-      return;
-    }
-
-    await doChangeStatus(id, status);
+  const onChangeStatus = (item, status) => {
+    setStatusDialog({
+      id: item.id,
+      fullName: item.fullName,
+      fromStatus: item.status,
+      toStatus: status,
+      note: "",
+      scheduledAt: status === "SCHEDULED" ? toDateTimeLocalValue(item.scheduledAt) : "",
+    });
   };
 
   const onArchive = async (id) => {
@@ -339,8 +387,9 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
     () => ({
       NEW: activeItems.filter((item) => item.status === "NEW").length,
       IN_REVIEW: activeItems.filter((item) => item.status === "IN_REVIEW").length,
+      SCHEDULED: activeItems.filter((item) => item.status === "SCHEDULED").length,
       APPROVED: activeItems.filter((item) => item.status === "APPROVED").length,
-      DECLINED: activeItems.filter((item) => item.status === "DECLINED").length,
+      PENDING: activeItems.filter((item) => item.status === "PENDING").length,
     }),
     [activeItems]
   );
@@ -374,9 +423,10 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   );
 
   const setStatusView = (status) => {
+    const nextStatus = normalizeApplicationStatus(status);
     setActiveSection("active");
-    setActiveStatus(status);
-    router.replace(`/admin/applications?status=${status}`);
+    setActiveStatus(nextStatus);
+    router.replace(`/admin/applications?status=${nextStatus}`);
   };
 
   const setSectionView = (section, status = activeStatus) => {
@@ -386,7 +436,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
       return;
     }
 
-    const nextStatus = isApplicationStatus(status) ? status : "NEW";
+    const nextStatus = isApplicationStatus(status) ? normalizeApplicationStatus(status) : "NEW";
     setActiveStatus(nextStatus);
     router.replace(`/admin/applications?status=${nextStatus}`);
   };
@@ -407,7 +457,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
           </div>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {APPLICATION_STATUS_ORDER.map((status) => {
             const meta = STATUS_CARD_META[status];
             const Icon = meta.icon;
@@ -447,7 +497,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                 <p className="text-sm text-slate-500">
                   {activeSection === "archived"
                     ? "Archived applications stay in the system and can be restored whenever needed."
-                    : "Review each application and move it through the four-step admin workflow."}
+                    : "Review each application, add required notes for status changes, and schedule applicants when needed."}
                 </p>
               </div>
 
@@ -632,7 +682,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                       className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
                     >
                       <option value="">Select Visa Type</option>
-                      {APPLICATION_VISA_TYPES.map((option) => (
+                      {visaTypeOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
@@ -659,9 +709,11 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                       className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
                     >
                       <option value="">Select Time</option>
-                      <option value="9AM-12PM">9AM-12PM</option>
-                      <option value="1PM-3PM">1PM-3PM</option>
-                      <option value="4PM-5PM">4PM-5PM</option>
+                      {formSettings.timeSlots.map((slot) => (
+                        <option key={`${slot.start}-${slot.end}`} value={slot.label}>
+                          {slot.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
 
@@ -674,12 +726,9 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                       className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
                     >
                       <option value="">Select Day</option>
-                      <option value="Monday">Monday</option>
-                      <option value="Tuesday">Tuesday</option>
-                      <option value="Wednesday">Wednesday</option>
-                      <option value="Thursday">Thursday</option>
-                      <option value="Friday">Friday</option>
-                      <option value="Saturday">Saturday</option>
+                      {formSettings.availableDays.map((day) => (
+                        <option key={day} value={day}>{day}</option>
+                      ))}
                     </select>
                   </label>
 
@@ -890,6 +939,12 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                               <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{item.availableDay}, {item.availableTime}</p>
                             </div>
                             <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Schedule</p>
+                              <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">
+                                {item.scheduledAt ? formatDate(item.scheduledAt) : "Not scheduled"}
+                              </p>
+                            </div>
+                            <div>
                               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Submitted</p>
                               <p className="mt-1 font-medium text-slate-800 dark:text-slate-100">{formatDate(item.createdAt)}</p>
                             </div>
@@ -936,7 +991,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                                     key={action.status}
                                     type="button"
                                     disabled={isBusy}
-                                    onClick={() => onChangeStatus(item.id, action.status)}
+                                    onClick={() => onChangeStatus(item, action.status)}
                                     className={[
                                       "rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
                                       ACTION_BUTTON_STYLES[action.tone] || ACTION_BUTTON_STYLES.neutral,
@@ -959,20 +1014,104 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
         </section>
       </div>
 
-      <ConfirmDialog
-        open={Boolean(confirmAction)}
-        title={confirmAction?.status === "APPROVED" ? "Approve application?" : "Reject application?"}
-        message={confirmAction?.status === "APPROVED" ? "Are you sure you want to approve this applicant?" : "Are you sure you want to reject this applicant?"}
-        confirmText={confirmAction?.status === "APPROVED" ? "Approve" : "Reject"}
-        cancelText="Cancel"
-        onCancel={() => setConfirmAction(null)}
-        onConfirm={async () => {
-          if (!confirmAction) return;
-          const pending = confirmAction;
-          setConfirmAction(null);
-          await doChangeStatus(pending.id, pending.status);
-        }}
-      />
+      {statusDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-slate-950/60"
+            aria-hidden="true"
+            onClick={() => setStatusDialog(null)}
+          />
+          <div className="relative z-10 w-full max-w-xl rounded-[28px] border border-[#d9e3f1] bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#164896]">Status Update</p>
+              <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                Move {statusDialog.fullName} to {getApplicationStatusLabel(statusDialog.toStatus)}
+              </h3>
+              <p className="mt-2 text-sm text-slate-500">
+                A note is required for every status change. Scheduled applications also need a date and time.
+              </p>
+            </div>
+
+            <div className="mt-5 grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block text-sm font-medium text-slate-700">
+                  Current Status
+                  <input
+                    type="text"
+                    value={getApplicationStatusLabel(statusDialog.fromStatus)}
+                    readOnly
+                    className="mt-1 w-full rounded-xl border border-[#cbd5e1] bg-slate-50 px-3 py-2.5 text-sm text-slate-600"
+                  />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">
+                  New Status
+                  <input
+                    type="text"
+                    value={getApplicationStatusLabel(statusDialog.toStatus)}
+                    readOnly
+                    className="mt-1 w-full rounded-xl border border-[#cbd5e1] bg-slate-50 px-3 py-2.5 text-sm text-slate-600"
+                  />
+                </label>
+              </div>
+
+              {statusDialog.toStatus === "SCHEDULED" ? (
+                <label className="block text-sm font-medium text-slate-700">
+                  Schedule Date And Time *
+                  <input
+                    type="datetime-local"
+                    value={statusDialog.scheduledAt}
+                    onChange={(event) =>
+                      setStatusDialog((prev) => (prev ? { ...prev, scheduledAt: event.target.value } : prev))
+                    }
+                    className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896]"
+                  />
+                </label>
+              ) : null}
+
+              <label className="block text-sm font-medium text-slate-700">
+                Note *
+                <textarea
+                  value={statusDialog.note}
+                  onChange={(event) =>
+                    setStatusDialog((prev) => (prev ? { ...prev, note: event.target.value } : prev))
+                  }
+                  className="mt-1 min-h-[140px] w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896]"
+                  placeholder="Explain why this application is being moved to the selected status."
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setStatusDialog(null)}
+                className="rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={statusUpdatingId === statusDialog.id}
+                onClick={async () => {
+                  const pending = statusDialog;
+                  const success = await doChangeStatus({
+                    id: pending.id,
+                    status: pending.toStatus,
+                    note: pending.note,
+                    scheduledAt: pending.toStatus === "SCHEDULED" ? pending.scheduledAt : null,
+                  });
+                  if (success) {
+                    setStatusDialog(null);
+                  }
+                }}
+                className="rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {statusUpdatingId === statusDialog.id ? "Saving..." : "Save Status Change"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AdminShell>
   );
 }

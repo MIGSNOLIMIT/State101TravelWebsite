@@ -20,7 +20,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel } from "@/lib/application-status";
+import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel, normalizeApplicationStatus } from "@/lib/application-status";
 import BackupArchiveNotice from "./BackupArchiveNotice";
 
 const primaryNav = [
@@ -28,8 +28,9 @@ const primaryNav = [
   { href: "/admin/applications", label: "Applications", icon: FileText, adminOnly: true },
   { href: "/admin/applications?status=NEW", label: getApplicationStatusLabel("NEW", "nav"), icon: Clock3, status: "NEW", subItem: true, adminOnly: true },
   { href: "/admin/applications?status=IN_REVIEW", label: getApplicationStatusLabel("IN_REVIEW", "nav"), icon: Search, status: "IN_REVIEW", subItem: true, adminOnly: true },
+  { href: "/admin/applications?status=SCHEDULED", label: getApplicationStatusLabel("SCHEDULED", "nav"), icon: Clock3, status: "SCHEDULED", subItem: true, adminOnly: true },
   { href: "/admin/applications?status=APPROVED", label: getApplicationStatusLabel("APPROVED", "nav"), icon: CheckCircle2, status: "APPROVED", subItem: true, adminOnly: true },
-  { href: "/admin/applications?status=DECLINED", label: getApplicationStatusLabel("DECLINED", "nav"), icon: XCircle, status: "DECLINED", subItem: true, adminOnly: true },
+  { href: "/admin/applications?status=PENDING", label: getApplicationStatusLabel("PENDING", "nav"), icon: XCircle, status: "PENDING", subItem: true, adminOnly: true },
   { href: "/admin/reports", label: "Reports", icon: BarChart3, adminOnly: true },
   { href: "/admin/logs", label: "Audit Logs", icon: ScrollText, adminOnly: true },
 ];
@@ -52,7 +53,7 @@ const accountNav = [
 function isNavItemActive(item, pathname, searchParams) {
   if (item.status) {
     if (pathname !== "/admin/applications") return false;
-    const currentStatus = searchParams.get("status") || APPLICATION_STATUS_ORDER[0];
+    const currentStatus = normalizeApplicationStatus(searchParams.get("status") || APPLICATION_STATUS_ORDER[0]);
     return currentStatus === item.status;
   }
   if (item.href === "/admin/applications") {

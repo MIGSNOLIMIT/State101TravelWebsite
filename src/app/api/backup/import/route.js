@@ -4,6 +4,7 @@ import { getAdminSession } from "@/lib/auth";
 import JSZip from "jszip";
 import { createClient } from "@supabase/supabase-js";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
+import { normalizeApplicationStatus } from "@/lib/application-status";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -99,7 +100,8 @@ export async function POST(req) {
             age: e.age || 0,
             availableTime: e.availableTime,
             availableDay: e.availableDay,
-            status: e.status || "NEW",
+            status: normalizeApplicationStatus(e.status),
+            scheduledAt: e.scheduledAt ? new Date(e.scheduledAt) : null,
             createdAt: e.createdAt ? new Date(e.createdAt) : undefined,
           },
         });
@@ -215,6 +217,7 @@ export async function POST(req) {
         availableTime: row[idx("availableTime")] || "",
         availableDay: row[idx("availableDay")] || "",
         status: row[idx("status")] || "NEW",
+        scheduledAt: row[idx("scheduledAt")] || undefined,
 			createdAt: row[idx("createdAt")] || undefined,
       };
 
@@ -233,7 +236,8 @@ export async function POST(req) {
 					age: data.age,
 					availableTime: data.availableTime,
 					availableDay: data.availableDay,
-					status: data.status || "NEW",
+					status: normalizeApplicationStatus(data.status),
+					scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
 					createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
 				},
 			});

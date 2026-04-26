@@ -13,7 +13,13 @@ import {
   buildApplicationAddress,
   getCitiesForProvince,
 } from "@/lib/application-address";
-import { APPLICATION_VISA_TYPES } from "@/lib/application-visa";
+import {
+  DEFAULT_APPLICATION_AVAILABLE_DAYS,
+  DEFAULT_APPLICATION_TIME_SLOTS,
+  DEFAULT_APPLICATION_VISA_TYPES,
+  normalizeApplicationFormSettings,
+} from "@/lib/application-form-settings";
+import { toApplicationVisaOptions } from "@/lib/application-visa";
 
 export default function ApplicationFormEmbed() {
   const formRef = useRef(null);
@@ -24,9 +30,17 @@ export default function ApplicationFormEmbed() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [address, setAddress] = useState(APPLICATION_ADDRESS_INITIAL_VALUES);
+  const [formSettings, setFormSettings] = useState(() =>
+    normalizeApplicationFormSettings({
+      applicationAvailableDays: DEFAULT_APPLICATION_AVAILABLE_DAYS,
+      applicationVisaTypes: DEFAULT_APPLICATION_VISA_TYPES,
+      applicationTimeSlots: DEFAULT_APPLICATION_TIME_SLOTS,
+    })
+  );
 
   const cityOptions = getCitiesForProvince(address.province);
   const composedAddress = buildApplicationAddress(address);
+  const visaTypeOptions = toApplicationVisaOptions(formSettings.visaTypes);
 
   function handleAddressChange(field, value) {
     setAddress((prev) => {
@@ -59,7 +73,10 @@ export default function ApplicationFormEmbed() {
         const res = await fetch("/api/admin/services-page", { cache: "no-store" });
         if (res.ok) {
           const json = await res.json();
-          if (!ignore) setRequirementsText(json?.requirementsText || "");
+          if (!ignore && json) {
+            setRequirementsText(json?.requirementsText || "");
+            setFormSettings(normalizeApplicationFormSettings(json));
+          }
         }
       } catch {}
       setLoadingReqs(false);
@@ -212,7 +229,7 @@ export default function ApplicationFormEmbed() {
               <label className="block text-sm font-medium text-gray-700">Visa Type *</label>
               <select name="visaType" required className="mt-1 w-full rounded border px-3 py-2">
                 <option value="">Select Visa Type</option>
-                {APPLICATION_VISA_TYPES.map((option) => (
+                {visaTypeOptions.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
@@ -225,22 +242,20 @@ export default function ApplicationFormEmbed() {
               <label className="block text-sm font-medium text-gray-700">Available Time *</label>
               <select name="availableTime" required className="mt-1 w-full rounded border px-3 py-2">
                 <option value="">Select Time</option>
-                <option value="9AM-12PM">9AM-12PM</option>
-                <option value="1PM-3PM">1PM-3PM</option>
-                <option value="4PM-5PM">4PM-5PM</option>
+                {formSettings.timeSlots.map((slot) => (
+                  <option key={`${slot.start}-${slot.end}`} value={slot.label}>
+                    {slot.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Available Day *</label>
               <select name="availableDay" required className="mt-1 w-full rounded border px-3 py-2">
                 <option value="">Select Day</option>
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                
+                {formSettings.availableDays.map((day) => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
               </select>
             </div>
           </div>

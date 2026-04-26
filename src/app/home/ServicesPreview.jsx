@@ -1,6 +1,8 @@
 
 "use client";
 
+import { getReadMoreLink } from "@/lib/services-navigation";
+
 export default function ServicesPreview({ servicesData }) {
   // Static fallback cards if no CMS data
   const staticServices = [
@@ -12,7 +14,7 @@ export default function ServicesPreview({ servicesData }) {
         'Guidance in completing requirements and documents',
         'Support in preparing for interviews and submissions',
       ],
-      link: '/services',
+      link: '/services#for-canada',
       titleColor: 'text-red-600',
     },
     {
@@ -23,7 +25,7 @@ export default function ServicesPreview({ servicesData }) {
         'Special assistance for those pursuing caregiver training programs in the U.S.',
         'Step-by-step guidance from requirements to orientation',
       ],
-      link: '/services',
+      link: '/services#for-united-states',
       titleColor: 'text-blue-600',
     },
   ];
@@ -113,7 +115,7 @@ export default function ServicesPreview({ servicesData }) {
                 </ul>
                 <div className="mt-auto flex justify-center">
                   <a
-                    href={service.link || '/services'}
+                    href={getReadMoreLink(service)}
                     className={`px-4 py-2 rounded font-bold text-white text-[15px] leading-[17px] ${service.titleColor === 'text-red-600' ? 'bg-red-600 hover:bg-red-700' : 'bg-[#00008b] hover:bg-[#000070]'}`}
                     style={{ fontFamily: 'Almarai', width: '234px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
@@ -128,4 +130,3 @@ export default function ServicesPreview({ servicesData }) {
     </section>
   );
 }
-

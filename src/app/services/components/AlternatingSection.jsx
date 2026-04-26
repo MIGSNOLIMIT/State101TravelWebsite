@@ -3,6 +3,7 @@
 import Image from "next/image";
 
 export default function AlternatingSection({
+  sectionId,
   imageSrc,
   header,
   description,
@@ -22,7 +23,7 @@ export default function AlternatingSection({
   };
 
   return (
-    <section className={`${bgClass} py-16`}>
+    <section id={sectionId || undefined} className={`${bgClass} scroll-mt-24 py-16`}>
       <div className={`mx-auto flex max-w-6xl flex-col items-center gap-8 px-4 sm:px-6 md:gap-12 ${layoutClass}`}>
         <div className="mb-2 w-full md:mb-0 md:w-1/2">
           <Image

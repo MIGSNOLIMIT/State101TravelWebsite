@@ -28,7 +28,7 @@ function monthBucket(label, month) {
     uniqueVisitors: 0,
     applications: 0,
     approved: 0,
-    declined: 0,
+    pending: 0,
     inReview: 0,
   };
 }
@@ -92,9 +92,9 @@ export async function GET(req) {
         monthly[approvedMonth].approved += 1;
       }
 
-      if (entry.status === "DECLINED") {
-        const declinedMonth = new Date(entry.updatedAt || entry.createdAt).getMonth();
-        monthly[declinedMonth].declined += 1;
+      if (entry.status === "PENDING") {
+        const pendingMonth = new Date(entry.updatedAt || entry.createdAt).getMonth();
+        monthly[pendingMonth].pending += 1;
       }
     }
 
@@ -105,7 +105,7 @@ export async function GET(req) {
 
     const activeMonthIndex = [...monthly]
       .reverse()
-      .findIndex((bucket) => bucket.websiteViews || bucket.applications || bucket.approved || bucket.declined || bucket.inReview);
+      .findIndex((bucket) => bucket.websiteViews || bucket.applications || bucket.approved || bucket.pending || bucket.inReview);
     const thisMonth = new Date().getFullYear() === year ? new Date().getMonth() : -1;
     const selectedMonth = thisMonth >= 0
       ? monthly[thisMonth]
@@ -128,7 +128,7 @@ export async function GET(req) {
         uniqueVisitors: yearlyVisitorSet.size,
         applications: monthly.reduce((sum, bucket) => sum + bucket.applications, 0),
         approved: monthly.reduce((sum, bucket) => sum + bucket.approved, 0),
-        declined: monthly.reduce((sum, bucket) => sum + bucket.declined, 0),
+        pending: monthly.reduce((sum, bucket) => sum + bucket.pending, 0),
         inReview: monthly.reduce((sum, bucket) => sum + bucket.inReview, 0),
       },
       currentMonth: selectedMonth,
@@ -141,7 +141,7 @@ export async function GET(req) {
         new: monthly.reduce((sum, bucket) => sum + bucket.applications, 0),
         inReview: monthly.reduce((sum, bucket) => sum + bucket.inReview, 0),
         approved: monthly.reduce((sum, bucket) => sum + bucket.approved, 0),
-        declined: monthly.reduce((sum, bucket) => sum + bucket.declined, 0),
+        pending: monthly.reduce((sum, bucket) => sum + bucket.pending, 0),
       },
     });
   } catch (error) {

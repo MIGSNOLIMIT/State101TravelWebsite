@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
-import { getApplicationStatusLabel } from "@/lib/application-status";
+import {
+  getApplicationStatusLabel,
+  isApplicationStatus,
+  normalizeApplicationStatus,
+} from "@/lib/application-status";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +23,15 @@ export async function GET(_req, { params }) {
     const gate = await requireRole();
     if (gate.error) return gate.error;
     const id = params?.id;
-    const entry = await prisma.applicationEntry.findUnique({ where: { id }, include: { files: true } });
+    const entry = await prisma.applicationEntry.findUnique({
+      where: { id },
+      include: {
+        files: true,
+        statusHistory: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
     if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(entry);
   } catch (e) {
@@ -57,21 +69,70 @@ export async function PATCH(req, { params }) {
       return NextResponse.json(updated);
     }
 
-    if (!status || !["NEW", "IN_REVIEW", "APPROVED", "DECLINED"].includes(status)) {
+    const normalizedStatus = normalizeApplicationStatus(status);
+    const note = String(body?.note || "").trim();
+    const scheduledAtValue = body?.scheduledAt ? new Date(body.scheduledAt) : null;
+    const hasValidScheduledAt = scheduledAtValue && !Number.isNaN(scheduledAtValue.getTime());
+
+    if (!status || !isApplicationStatus(normalizedStatus)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
-    const existing = await prisma.applicationEntry.findUnique({ where: { id }, select: { id: true, fullName: true, status: true } });
-    const updated = await prisma.applicationEntry.update({ where: { id }, data: { status } });
+
+    if (!note) {
+      return NextResponse.json({ error: "A note is required before moving an application." }, { status: 400 });
+    }
+
+    if (normalizedStatus === "SCHEDULED" && !hasValidScheduledAt) {
+      return NextResponse.json({ error: "A schedule date and time is required for scheduled applications." }, { status: 400 });
+    }
+
+    const existing = await prisma.applicationEntry.findUnique({
+      where: { id },
+      select: { id: true, fullName: true, status: true, scheduledAt: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const updated = await prisma.applicationEntry.update({
+      where: { id },
+      data: {
+        status: normalizedStatus,
+        scheduledAt: normalizedStatus === "SCHEDULED" ? scheduledAtValue : null,
+        statusHistory: {
+          create: {
+            fromStatus: existing.status,
+            toStatus: normalizedStatus,
+            note,
+            scheduledAt: normalizedStatus === "SCHEDULED" ? scheduledAtValue : null,
+            actorUserId: actor.id,
+            actorName: actor.name || null,
+            actorEmail: actor.email || null,
+          },
+        },
+      },
+      include: {
+        statusHistory: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
     await safeWriteAuditLog(req, {
       category: "applications",
       action: "applications.status.update",
       status: "SUCCESS",
-      summary: `${actor.name || actor.email} changed ${existing?.fullName || updated.id} to ${getApplicationStatusLabel(status)}.`,
+      summary: `${actor.name || actor.email} changed ${existing?.fullName || updated.id} to ${getApplicationStatusLabel(normalizedStatus)}.`,
       actorSnapshot: buildActorSnapshot(actor),
       targetType: "application",
       targetId: updated.id,
       targetLabel: existing?.fullName || updated.id,
-      details: { fromStatus: existing?.status || null, toStatus: status },
+      details: {
+        fromStatus: existing?.status || null,
+        toStatus: normalizedStatus,
+        note,
+        scheduledAt: normalizedStatus === "SCHEDULED" ? scheduledAtValue : null,
+      },
     });
     return NextResponse.json(updated);
   } catch (e) {
@@ -112,4 +173,3 @@ export async function DELETE(_req, { params }) {
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, ArrowLeft, Download, RotateCcw } from "lucide-react";
 import AdminShell from "@/app/admin/components/AdminShell";
@@ -16,8 +16,9 @@ function formatDate(date) {
 const STATUS_BADGE_CLASSES = {
   NEW: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100",
   IN_REVIEW: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-200",
+  SCHEDULED: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-200",
   APPROVED: "bg-green-100 text-green-700 dark:bg-green-950/60 dark:text-green-200",
-  DECLINED: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-200",
+  PENDING: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-200",
 };
 
 function DetailField({ label, value }) {
@@ -37,7 +38,7 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/application/${id}`, { cache: "no-store" });
@@ -52,11 +53,11 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
       setMsg("Failed to load");
     }
     setLoading(false);
-  }
+  }, [id]);
 
   useEffect(() => {
     if (id) load();
-  }, [id]);
+  }, [id, load]);
 
   const onArchiveEntry = async () => {
     if (!confirm("Archive this application? You can restore it later from the archive section.")) return;
@@ -175,9 +176,50 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
                 <DetailField label="Age" value={item.age ? String(item.age) : "-"} />
                 <DetailField label="Available Day" value={item.availableDay} />
                 <DetailField label="Available Time" value={item.availableTime} />
+                <DetailField label="Scheduled At" value={item.scheduledAt ? formatDate(item.scheduledAt) : "Not scheduled"} />
                 <DetailField label="Last Updated" value={formatDate(item.updatedAt)} />
                 <DetailField label="Archived At" value={item.archivedAt ? formatDate(item.archivedAt) : "Active"} />
               </div>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-[28px] border-2 border-[#9eb8e3] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)] dark:border-[#5d7fb3] dark:bg-slate-900">
+            <div className="border-b-2 border-[#b8cae8] bg-[#f7f9fc] px-5 py-5 dark:border-[#4d6f9f] dark:bg-slate-950 md:px-6">
+              <h2 className="text-2xl font-semibold text-[#143f88] dark:text-blue-300">Status History</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Every status move now keeps the note and timestamp from the admin action.</p>
+            </div>
+
+            <div className="px-5 py-6 md:px-6">
+              {item.statusHistory?.length ? (
+                <div className="space-y-3">
+                  {item.statusHistory.map((entry) => (
+                    <article
+                      key={entry.id}
+                      className="rounded-[20px] border-2 border-[#c8d7ee] bg-[#f8fafd] p-4 shadow-sm dark:border-[#4d6f9f] dark:bg-slate-950"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-[#eef3fa] px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                          {entry.fromStatus ? getApplicationStatusLabel(entry.fromStatus) : "Created"}
+                        </span>
+                        <span className="text-sm text-slate-400">to</span>
+                        <span className="rounded-full bg-[#164896] px-3 py-1 text-xs font-semibold text-white">
+                          {getApplicationStatusLabel(entry.toStatus)}
+                        </span>
+                        <span className="text-xs text-slate-500">{formatDate(entry.createdAt)}</span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-200">{entry.note}</p>
+                      <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
+                        <span>By: {entry.actorName || entry.actorEmail || "Admin"}</span>
+                        {entry.scheduledAt ? <span>Schedule: {formatDate(entry.scheduledAt)}</span> : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-[24px] border-2 border-dashed border-[#9eb8e3] bg-[#f8fafc] px-6 py-12 text-center text-sm text-slate-500 dark:border-[#5d7fb3] dark:bg-slate-950 dark:text-slate-300">
+                  No status history yet.
+                </div>
+              )}
             </div>
           </section>
 

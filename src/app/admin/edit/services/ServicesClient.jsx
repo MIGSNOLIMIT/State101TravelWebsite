@@ -1,12 +1,38 @@
 "use client";
 
-import { Save } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { AdminEditorCard, AdminEditorLabel, AdminEditorNote, AdminEditorStrip, adminEditorInputClass, adminEditorTextareaClass } from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import Image from "next/image";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
+import {
+  buildTimeSlotLabel,
+  DEFAULT_APPLICATION_AVAILABLE_DAYS,
+  DEFAULT_APPLICATION_TIME_SLOTS,
+  DEFAULT_APPLICATION_VISA_TYPES,
+  normalizeApplicationFormSettings,
+} from "@/lib/application-form-settings";
+
+function buildDefaultPage() {
+  const formSettings = normalizeApplicationFormSettings({
+    applicationAvailableDays: DEFAULT_APPLICATION_AVAILABLE_DAYS,
+    applicationVisaTypes: DEFAULT_APPLICATION_VISA_TYPES,
+    applicationTimeSlots: DEFAULT_APPLICATION_TIME_SLOTS,
+  });
+
+  return {
+    heroImageUrl: "",
+    heroTitle: "",
+    heroDesc: "",
+    sectionTitle: "",
+    sectionDesc: "",
+    requirementsText: "",
+    sections: [],
+    ...formSettings,
+  };
+}
 
 export default function ServicesClient({ initialUserName, initialRole }) {
   const [page, setPage] = useState(null);
@@ -16,6 +42,9 @@ export default function ServicesClient({ initialUserName, initialRole }) {
   const [mediaWarning, setMediaWarning] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
+  const [dayDraft, setDayDraft] = useState("");
+  const [visaDraft, setVisaDraft] = useState("");
+  const [timeDraft, setTimeDraft] = useState({ start: "", end: "" });
 
   useEffect(() => {
     let ignore = false;
@@ -25,7 +54,7 @@ export default function ServicesClient({ initialUserName, initialRole }) {
       const res = await fetch("/api/admin/services-page");
       const json = await res.json();
       if (!ignore) {
-        setPage(json);
+        setPage(json ? { ...json, ...normalizeApplicationFormSettings(json) } : buildDefaultPage());
         setLoading(false);
       }
     }
@@ -45,6 +74,63 @@ export default function ServicesClient({ initialUserName, initialRole }) {
       ...prev,
       sections: prev.sections.map((section, sectionIndex) => (sectionIndex === index ? { ...section, [field]: value } : section)),
     }));
+  };
+
+  const handleApplicationListChange = (field, index, value) => {
+    setPage((prev) => ({
+      ...prev,
+      [field]: prev[field].map((item, itemIndex) => (itemIndex === index ? value : item)),
+    }));
+  };
+
+  const removeApplicationListItem = (field, index) => {
+    setPage((prev) => ({
+      ...prev,
+      [field]: prev[field].filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const handleTimeSlotChange = (index, field, value) => {
+    setPage((prev) => ({
+      ...prev,
+      timeSlots: prev.timeSlots.map((slot, slotIndex) => {
+        if (slotIndex !== index) return slot;
+        const next = { ...slot, [field]: value };
+        return { ...next, label: buildTimeSlotLabel(next) };
+      }),
+    }));
+  };
+
+  const removeTimeSlot = (index) => {
+    setPage((prev) => ({
+      ...prev,
+      timeSlots: prev.timeSlots.filter((_, slotIndex) => slotIndex !== index),
+    }));
+  };
+
+  const addAvailableDay = () => {
+    const value = dayDraft.trim();
+    if (!value) return;
+    setPage((prev) => ({ ...prev, availableDays: [...prev.availableDays, value] }));
+    setDayDraft("");
+  };
+
+  const addVisaType = () => {
+    const value = visaDraft.trim();
+    if (!value) return;
+    setPage((prev) => ({ ...prev, visaTypes: [...prev.visaTypes, value] }));
+    setVisaDraft("");
+  };
+
+  const addTimeSlot = () => {
+    if (!timeDraft.start || !timeDraft.end) return;
+    const nextSlot = {
+      start: timeDraft.start,
+      end: timeDraft.end,
+      label: buildTimeSlotLabel(timeDraft),
+    };
+    setPage((prev) => ({ ...prev, timeSlots: [...prev.timeSlots, nextSlot] }));
+    setTimeDraft({ start: "", end: "" });
   };
 
   const doSave = async () => {
@@ -132,6 +218,194 @@ export default function ServicesClient({ initialUserName, initialRole }) {
             className={`${adminEditorTextareaClass} min-h-[180px] resize-y`}
             placeholder={"Valid passport (Photocopy)\n2x2 photo (white background)\nTraining Certificate (if available)\nDiploma (Photocopy if available)\nUpdated Resume\nOther supporting documents may be discussed during your assessment."}
           />
+        </AdminEditorCard>
+
+        <AdminEditorCard title="Application Form Dropdowns">
+          <div className="space-y-8">
+            <div>
+              <AdminEditorLabel>Available Day</AdminEditorLabel>
+              <AdminEditorNote className="mt-2">Add or edit the day choices shown in the public application forms.</AdminEditorNote>
+              <div className="mt-4 flex flex-col gap-3 md:flex-row">
+                <input
+                  type="text"
+                  value={dayDraft}
+                  onChange={(event) => setDayDraft(event.target.value)}
+                  className={adminEditorInputClass}
+                  placeholder="Add a day option"
+                />
+                <button
+                  type="button"
+                  onClick={addAvailableDay}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-[#164896] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                >
+                  <Plus size={16} />
+                  Add Day
+                </button>
+              </div>
+              <div className="mt-4 overflow-hidden rounded-[18px] border border-[#d9e3f1]">
+                <table className="min-w-full divide-y divide-[#d9e3f1] text-sm">
+                  <thead className="bg-[#f7f9fc] text-left text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Current Day</th>
+                      <th className="px-4 py-3 font-semibold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#eef3fa] bg-white">
+                    {page.availableDays.map((day, index) => (
+                      <tr key={`${day}-${index}`}>
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={day}
+                            onChange={(event) => handleApplicationListChange("availableDays", index, event.target.value)}
+                            className={adminEditorInputClass}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => removeApplicationListItem("availableDays", index)}
+                            className="inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 font-semibold text-red-600 transition hover:bg-red-50"
+                          >
+                            <Trash2 size={15} />
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <AdminEditorLabel>Available Time</AdminEditorLabel>
+              <AdminEditorNote className="mt-2">Set each time range with a start time and end time, then review the live table below.</AdminEditorNote>
+              <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                <input
+                  type="time"
+                  value={timeDraft.start}
+                  onChange={(event) => setTimeDraft((prev) => ({ ...prev, start: event.target.value }))}
+                  className={adminEditorInputClass}
+                />
+                <input
+                  type="time"
+                  value={timeDraft.end}
+                  onChange={(event) => setTimeDraft((prev) => ({ ...prev, end: event.target.value }))}
+                  className={adminEditorInputClass}
+                />
+                <button
+                  type="button"
+                  onClick={addTimeSlot}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-[#164896] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                >
+                  <Plus size={16} />
+                  Add Time
+                </button>
+              </div>
+              <div className="mt-4 overflow-hidden rounded-[18px] border border-[#d9e3f1]">
+                <table className="min-w-full divide-y divide-[#d9e3f1] text-sm">
+                  <thead className="bg-[#f7f9fc] text-left text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Start</th>
+                      <th className="px-4 py-3 font-semibold">End</th>
+                      <th className="px-4 py-3 font-semibold">Current Set</th>
+                      <th className="px-4 py-3 font-semibold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#eef3fa] bg-white">
+                    {page.timeSlots.map((slot, index) => (
+                      <tr key={`${slot.start}-${slot.end}-${index}`}>
+                        <td className="px-4 py-3">
+                          <input
+                            type="time"
+                            value={slot.start}
+                            onChange={(event) => handleTimeSlotChange(index, "start", event.target.value)}
+                            className={adminEditorInputClass}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="time"
+                            value={slot.end}
+                            onChange={(event) => handleTimeSlotChange(index, "end", event.target.value)}
+                            className={adminEditorInputClass}
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-medium text-slate-700">{buildTimeSlotLabel(slot) || "Incomplete time range"}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => removeTimeSlot(index)}
+                            className="inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 font-semibold text-red-600 transition hover:bg-red-50"
+                          >
+                            <Trash2 size={15} />
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <AdminEditorLabel>Visa Type</AdminEditorLabel>
+              <AdminEditorNote className="mt-2">Manage the visa type choices used by both the website form and the admin walk-in form.</AdminEditorNote>
+              <div className="mt-4 flex flex-col gap-3 md:flex-row">
+                <input
+                  type="text"
+                  value={visaDraft}
+                  onChange={(event) => setVisaDraft(event.target.value)}
+                  className={adminEditorInputClass}
+                  placeholder="Add a visa type"
+                />
+                <button
+                  type="button"
+                  onClick={addVisaType}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-[#164896] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                >
+                  <Plus size={16} />
+                  Add Visa Type
+                </button>
+              </div>
+              <div className="mt-4 overflow-hidden rounded-[18px] border border-[#d9e3f1]">
+                <table className="min-w-full divide-y divide-[#d9e3f1] text-sm">
+                  <thead className="bg-[#f7f9fc] text-left text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Current Visa Type</th>
+                      <th className="px-4 py-3 font-semibold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#eef3fa] bg-white">
+                    {page.visaTypes.map((visaType, index) => (
+                      <tr key={`${visaType}-${index}`}>
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={visaType}
+                            onChange={(event) => handleApplicationListChange("visaTypes", index, event.target.value)}
+                            className={adminEditorInputClass}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => removeApplicationListItem("visaTypes", index)}
+                            className="inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 font-semibold text-red-600 transition hover:bg-red-50"
+                          >
+                            <Trash2 size={15} />
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </AdminEditorCard>
 
         {page.sections?.length ? (

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminRoles } from '@/lib/admin-access';
 import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
+import { normalizeApplicationFormSettings } from '@/lib/application-form-settings';
 
 // GET: fetch services page (hero + sections)
 export async function GET() {
@@ -11,7 +12,11 @@ export async function GET() {
     if (!page) return NextResponse.json(null);
     // Fetch sections (Service model)
     const sections = await prisma.service.findMany({ orderBy: { updatedAt: 'desc' } });
-    return NextResponse.json({ ...page, sections });
+    return NextResponse.json({
+      ...page,
+      ...normalizeApplicationFormSettings(page),
+      sections,
+    });
   } catch (e) {
     console.error('ServicesPage API error:', e);
     return NextResponse.json(null, { status: 500 });
@@ -25,6 +30,7 @@ export async function PUT(req) {
     if (gate.error) return gate.error;
     const { user } = gate;
     const body = await req.json();
+    const normalizedFormSettings = normalizeApplicationFormSettings(body);
     // Update hero
     await prisma.servicesPage.upsert({
       where: { id: body.id || 1 },
@@ -35,6 +41,9 @@ export async function PUT(req) {
         sectionTitle: body.sectionTitle,
         sectionDesc: body.sectionDesc,
         requirementsText: body.requirementsText ?? null,
+        applicationAvailableDays: normalizedFormSettings.availableDays,
+        applicationVisaTypes: normalizedFormSettings.visaTypes,
+        applicationTimeSlots: normalizedFormSettings.timeSlots,
       },
       create: {
         heroImageUrl: body.heroImageUrl,
@@ -43,6 +52,9 @@ export async function PUT(req) {
         sectionTitle: body.sectionTitle,
         sectionDesc: body.sectionDesc,
         requirementsText: body.requirementsText ?? null,
+        applicationAvailableDays: normalizedFormSettings.availableDays,
+        applicationVisaTypes: normalizedFormSettings.visaTypes,
+        applicationTimeSlots: normalizedFormSettings.timeSlots,
       },
     });
     // Update sections (replace all)
@@ -76,6 +88,9 @@ export async function PUT(req) {
       heroTitle: body.heroTitle || '',
       sectionsCount: Array.isArray(body.sections) ? body.sections.length : 0,
       hasRequirementsText: Boolean(body.requirementsText),
+      applicationDaysCount: normalizedFormSettings.availableDays.length,
+      applicationVisaTypesCount: normalizedFormSettings.visaTypes.length,
+      applicationTimeSlotsCount: normalizedFormSettings.timeSlots.length,
     },
     });
     return NextResponse.json({ success: true });

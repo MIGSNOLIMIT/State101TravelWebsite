@@ -17,13 +17,22 @@ export async function GET() {
     const items = await prisma.applicationEntry.findMany({
       where: {
         archivedAt: null,
+        status: "SCHEDULED",
+        scheduledAt: {
+          not: null,
+        },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { scheduledAt: "asc" },
       select: {
         id: true,
-        createdAt: true,
-        updatedAt: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        visaType: true,
         status: true,
+        scheduledAt: true,
+        availableDay: true,
+        availableTime: true,
       },
     });
 

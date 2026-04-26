@@ -8,6 +8,7 @@ import AlternatingSection from "./components/AlternatingSection";
 import ServicesHero from "./components/ServicesHero";
 import WhyChoose from "./components/WhyChoose";
 import ApplicationFormEmbed from "./components/ApplicationFormEmbed";
+import { getServicesSectionAnchor } from "@/lib/services-navigation";
 const staticSections = [
   {
     iconUrl: "/images/section1.png",
@@ -58,6 +59,17 @@ export default function ServicesPage() {
   } : null;
   const sections = page?.sections?.length ? page.sections : staticSections;
 
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !sections.length) return;
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash) return;
+
+    const target = document.getElementById(hash);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [sections]);
+
   return (
     <main>
       {hero && (
@@ -66,6 +78,7 @@ export default function ServicesPage() {
       {sections.map((section, index) => (
         <React.Fragment key={section.id || index}>
           <AlternatingSection
+            sectionId={getServicesSectionAnchor(section.country || section.title)}
             imageSrc={section.iconUrl}
             header={section.title}
             description={section.description}

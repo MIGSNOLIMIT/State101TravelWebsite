@@ -2,433 +2,358 @@
 
 export const dynamic = "force-dynamic";
 
-import { Bell, BadgeCheck, MessageCircleMore, XCircle } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
-import { APPLICATION_STATUS_SUMMARY_LABELS } from "@/lib/application-status";
+import { getApplicationVisaLabel } from "@/lib/application-visa";
 
-const RANGE_OPTIONS = [
-	{ key: "week", label: "Week" },
-	{ key: "month", label: "Month" },
-	{ key: "year", label: "Year" },
+const VIEW_OPTIONS = [
+  { key: "week", label: "Weekly" },
+  { key: "month", label: "Monthly" },
 ];
-
-const SUMMARY_CARDS = [
-	{ status: "NEW", icon: Bell, tone: "slate" },
-	{ status: "IN_REVIEW", icon: MessageCircleMore, tone: "amber" },
-	{ status: "APPROVED", icon: BadgeCheck, tone: "green" },
-	{ status: "DECLINED", icon: XCircle, tone: "red" },
-];
-
-const cardToneClasses = {
-	slate: {
-		icon: "bg-slate-100 text-slate-700",
-		count: "text-slate-800",
-		label: "text-slate-700",
-		ring: "shadow-[0_12px_24px_rgba(100,116,139,0.22)]",
-	},
-	amber: {
-		icon: "bg-amber-100 text-amber-700",
-		count: "text-amber-700",
-		label: "text-amber-600",
-		ring: "shadow-[0_12px_24px_rgba(217,119,6,0.24)]",
-	},
-	green: {
-		icon: "bg-green-100 text-green-700",
-		count: "text-green-700",
-		label: "text-green-600",
-		ring: "shadow-[0_12px_24px_rgba(22,163,74,0.24)]",
-	},
-	red: {
-		icon: "bg-red-100 text-red-700",
-		count: "text-red-700",
-		label: "text-red-600",
-		ring: "shadow-[0_12px_24px_rgba(220,38,38,0.24)]",
-	},
-};
-
-const chartColors = {
-	applications: "#0f1f77",
-};
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-function startOfWeek(date) {
-	const value = new Date(date);
-	const day = value.getDay();
-	const diff = (day + 6) % 7;
-	value.setHours(0, 0, 0, 0);
-	value.setDate(value.getDate() - diff);
-	return value;
-}
-
 function startOfDay(date) {
-	const value = new Date(date);
-	value.setHours(0, 0, 0, 0);
-	return value;
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  return value;
 }
 
-function getValidDates(items) {
-	return items
-		.flatMap((item) => [item.createdAt, item.updatedAt])
-		.map((value) => new Date(value))
-		.filter((value) => !Number.isNaN(value.getTime()));
+function startOfWeek(date) {
+  const value = startOfDay(date);
+  const day = value.getDay();
+  const diff = (day + 6) % 7;
+  value.setDate(value.getDate() - diff);
+  return value;
 }
 
-function buildSeries(items, mode) {
-	const now = new Date();
-	const points = [];
-
-	if (mode === "week") {
-		const currentWeek = startOfWeek(now);
-		for (let index = 0; index < 7; index += 1) {
-			const start = new Date(currentWeek);
-			start.setDate(currentWeek.getDate() + index);
-			const end = new Date(start);
-			end.setDate(start.getDate() + 1);
-			points.push({ key: start.toISOString(), label: WEEKDAY_LABELS[index], start, end });
-		}
-	}
-
-	if (mode === "month") {
-		for (let index = 11; index >= 0; index -= 1) {
-			const start = new Date(now.getFullYear(), now.getMonth() - index, 1);
-			const end = new Date(now.getFullYear(), now.getMonth() - index + 1, 1);
-			points.push({
-				key: start.toISOString(),
-				label: start.toLocaleDateString("en-US", { month: "short" }),
-				start,
-				end,
-			});
-		}
-	}
-
-	if (mode === "year") {
-		const currentYear = now.getFullYear();
-		const validDates = getValidDates(items);
-		const earliestDataYear = validDates.length
-			? Math.min(...validDates.map((value) => value.getFullYear()))
-			: currentYear - 1;
-		const startYear = Math.min(earliestDataYear, currentYear - 1);
-
-		for (let year = startYear; year <= currentYear; year += 1) {
-			const start = new Date(year, 0, 1);
-			const end = new Date(year + 1, 0, 1);
-			points.push({ key: start.toISOString(), label: `${year}`, start, end });
-		}
-	}
-
-	return points.map((point) => {
-		const applications = items.filter((item) => {
-			const createdAt = new Date(item.createdAt);
-			return createdAt >= point.start && createdAt < point.end;
-		}).length;
-
-		return {
-			...point,
-			applications,
-		};
-	});
+function addDays(date, days) {
+  const value = new Date(date);
+  value.setDate(value.getDate() + days);
+  return value;
 }
 
-function getNiceChartScale(maxValue, desiredSteps = 5) {
-	if (maxValue <= 0) {
-		return {
-			chartMax: 1,
-			chartSteps: [1, 0],
-		};
-	}
-
-	const roughStep = maxValue / desiredSteps;
-	if (roughStep <= 1) {
-		return {
-			chartMax: maxValue,
-			chartSteps: Array.from({ length: maxValue + 1 }, (_, index) => maxValue - index),
-		};
-	}
-
-	const magnitude = 10 ** Math.floor(Math.log10(roughStep));
-	const normalizedStep = roughStep / magnitude;
-
-	let niceStep = magnitude;
-	if (normalizedStep > 5) {
-		niceStep = 10 * magnitude;
-	} else if (normalizedStep > 2) {
-		niceStep = 5 * magnitude;
-	} else if (normalizedStep > 1) {
-		niceStep = 2 * magnitude;
-	}
-
-	const chartMax = Math.max(niceStep, Math.ceil(maxValue / niceStep) * niceStep);
-	const stepsCount = Math.max(1, Math.ceil(chartMax / niceStep));
-	const chartSteps = Array.from({ length: stepsCount + 1 }, (_, index) => Math.max(0, chartMax - niceStep * index));
-
-	if (chartSteps[chartSteps.length - 1] !== 0) {
-		chartSteps.push(0);
-	}
-
-	return { chartMax, chartSteps };
+function sameDay(left, right) {
+  return startOfDay(left).getTime() === startOfDay(right).getTime();
 }
 
-function getChartPointPosition(index, total, chartWidth) {
-	if (total <= 1) {
-		return chartWidth / 2;
-	}
-
-	return (index / (total - 1)) * chartWidth;
+function formatDate(date, options) {
+  return new Date(date).toLocaleDateString("en-US", options);
 }
 
-function getChartY(value, chartHeight, chartMax) {
-	if (!chartMax) {
-		return chartHeight;
-	}
-
-	return chartHeight - (value / chartMax) * chartHeight;
+function formatDateTime(date) {
+  return new Date(date).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
-function buildLinePath(values, chartWidth, chartHeight, chartMax) {
-	if (!values.length) return "";
-	if (values.length === 1) {
-		const y = getChartY(values[0], chartHeight, chartMax);
-		return `M ${chartWidth / 2} ${y}`;
-	}
-
-	return values
-		.map((value, index) => {
-			const x = getChartPointPosition(index, values.length, chartWidth);
-			const y = getChartY(value, chartHeight, chartMax);
-			return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-		})
-		.join(" ");
+function formatTime(date) {
+  return new Date(date).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
-function CountCard({ count, status, icon: Icon, tone, onClick, disabled = false }) {
-	const palette = cardToneClasses[tone];
-	const interactive = typeof onClick === "function" && !disabled;
+function buildWeekDays(anchorDate) {
+  const weekStart = startOfWeek(anchorDate);
+  return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+}
 
-	const className = [
-		"rounded-[24px] border border-[#d5dce7] bg-white px-6 py-5 text-left transition",
-		interactive ? `hover:-translate-y-0.5 hover:shadow-xl ${palette.ring}` : "",
-	].join(" ");
+function buildMonthGrid(anchorDate) {
+  const monthStart = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1);
+  const gridStart = startOfWeek(monthStart);
 
-	const content = (
-		<>
-			<div className="flex justify-end">
-				<span className={`flex h-10 w-10 items-center justify-center rounded-full ${palette.icon}`}>
-					<Icon size={18} strokeWidth={2.3} />
-				</span>
-			</div>
-			<div className={`mt-2 text-5xl font-semibold leading-none ${palette.count}`}>{count}</div>
-			<div className={`mt-3 text-lg font-medium ${palette.label}`}>{APPLICATION_STATUS_SUMMARY_LABELS[status]}</div>
-		</>
-	);
+  return Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
+}
 
-	if (!interactive) {
-		return <div className={className}>{content}</div>;
-	}
-
-	return (
-		<button type="button" onClick={onClick} className={className}>
-			{content}
-		</button>
-	);
+function sortSchedules(items) {
+  return [...items].sort((left, right) => new Date(left.scheduledAt) - new Date(right.scheduledAt));
 }
 
 export default function DashboardClient({ initialUserName, initialRole }) {
-	const router = useRouter();
-	const [applications, setApplications] = useState([]);
-	const [rangeMode, setRangeMode] = useState("week");
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState("");
-	const canManageApplications = initialRole === "admin";
+  const [schedules, setSchedules] = useState([]);
+  const [calendarView, setCalendarView] = useState("week");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [anchorDate, setAnchorDate] = useState(() => startOfDay(new Date()));
 
-	useEffect(() => {
-		let ignore = false;
+  useEffect(() => {
+    let ignore = false;
 
-		async function load() {
-			setLoading(true);
-			try {
-				const applicationsRes = await fetch("/api/application/metrics", { cache: "no-store" });
+    async function load() {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/application/metrics", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Failed to load dashboard schedules");
+        }
 
-				if (!applicationsRes.ok) {
-					throw new Error("Failed to load dashboard data");
-				}
+        const json = await response.json();
+        if (ignore) return;
 
-				const items = await applicationsRes.json();
-				if (ignore) return;
+        setSchedules(sortSchedules(json));
+        setError("");
+      } catch {
+        if (!ignore) setError("Failed to load dashboard schedules.");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
 
-				setApplications(items);
-				setError("");
-			} catch {
-				if (!ignore) setError("Failed to load dashboard data.");
-			} finally {
-				if (!ignore) setLoading(false);
-			}
-		}
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
-		load();
-		return () => {
-			ignore = true;
-		};
-	}, []);
+  const weekDays = useMemo(() => buildWeekDays(anchorDate), [anchorDate]);
+  const monthGrid = useMemo(() => buildMonthGrid(anchorDate), [anchorDate]);
 
-	const counts = useMemo(
-		() => ({
-			NEW: applications.filter((item) => item.status === "NEW").length,
-			IN_REVIEW: applications.filter((item) => item.status === "IN_REVIEW").length,
-			APPROVED: applications.filter((item) => item.status === "APPROVED").length,
-			DECLINED: applications.filter((item) => item.status === "DECLINED").length,
-		}),
-		[applications]
-	);
+  const weeklySchedules = useMemo(
+    () =>
+      weekDays.map((day) => ({
+        day,
+        items: schedules.filter((item) => item.scheduledAt && sameDay(item.scheduledAt, day)),
+      })),
+    [schedules, weekDays]
+  );
 
-	const chartData = useMemo(() => buildSeries(applications, rangeMode), [applications, rangeMode]);
-	const rawChartMax = Math.max(0, ...chartData.map((point) => point.applications));
-	const { chartMax, chartSteps } = useMemo(() => getNiceChartScale(rawChartMax), [rawChartMax]);
-	const plotWidth = 860;
-	const plotHeight = 250;
-	const svgWidth = 940;
-	const svgHeight = 320;
-	const chartPadding = {
-		top: 18,
-		right: 18,
-		bottom: 52,
-		left: 62,
-	};
+  const monthlySchedules = useMemo(
+    () =>
+      monthGrid.map((day) => ({
+        day,
+        inCurrentMonth: day.getMonth() === anchorDate.getMonth(),
+        items: schedules.filter((item) => item.scheduledAt && sameDay(item.scheduledAt, day)),
+      })),
+    [anchorDate, monthGrid, schedules]
+  );
 
-	return (
-		<AdminShell title="Dashboard" userName={initialUserName} role={initialRole}>
-			<div className="space-y-6">
-				{error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
+  const upcomingSchedules = useMemo(
+    () =>
+      schedules
+        .filter((item) => item.scheduledAt && new Date(item.scheduledAt) >= new Date())
+        .slice(0, 8),
+    [schedules]
+  );
 
-				<section className="overflow-hidden rounded-[28px] border border-[#cfd7e3] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
-					<div className="flex flex-col gap-4 bg-[#1d4f9d] px-5 py-5 text-white md:flex-row md:items-center md:justify-between md:px-8">
-						<div>
-							<h2 className="text-2xl font-semibold">Applicants overview</h2>
-							<p className="text-sm text-white/70">Weekly, monthly, and yearly application activity.</p>
-						</div>
-						<div className="inline-flex rounded-xl bg-white/15 p-1">
-							{RANGE_OPTIONS.map((option) => (
-								<button
-									key={option.key}
-									type="button"
-									onClick={() => setRangeMode(option.key)}
-									className={[
-										"rounded-lg px-3 py-1.5 text-sm font-medium transition",
-										rangeMode === option.key ? "bg-[#0f1f77] text-white" : "text-white/70 hover:text-white",
-									].join(" ")}
-								>
-									{option.label}
-								</button>
-							))}
-						</div>
-					</div>
+  const title =
+    calendarView === "week"
+      ? `${formatDate(weekDays[0], { month: "short", day: "numeric" })} - ${formatDate(weekDays[6], {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}`
+      : formatDate(anchorDate, { month: "long", year: "numeric" });
 
-					<div className="px-5 py-6 md:px-8">
-						{loading ? (
-							<div className="flex h-[320px] items-center justify-center text-sm text-slate-500">Loading dashboard metrics...</div>
-						) : (
-							<div>
-								<div className="relative h-[320px] rounded-[24px] bg-[#f8fafc] p-3 md:p-4">
-									<svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="h-full w-full" preserveAspectRatio="none">
-										<g transform={`translate(${chartPadding.left}, ${chartPadding.top})`}>
-											{chartSteps.map((step) => {
-												const y = getChartY(step, plotHeight, chartMax);
+  const moveCalendar = (direction) => {
+    setAnchorDate((current) => {
+      const next = new Date(current);
+      if (calendarView === "week") {
+        next.setDate(current.getDate() + direction * 7);
+      } else {
+        next.setMonth(current.getMonth() + direction);
+      }
+      return startOfDay(next);
+    });
+  };
 
-												return (
-													<g key={step}>
-														<line
-															x1="0"
-															y1={y}
-															x2={plotWidth}
-															y2={y}
-															stroke="#d5deea"
-															strokeWidth="1.5"
-															shapeRendering="crispEdges"
-														/>
-														<text
-															x="-14"
-															y={y + 4}
-															textAnchor="end"
-															fontSize="12"
-															fontWeight="600"
-															fill="#94a3b8"
-														>
-															{step}
-														</text>
-													</g>
-												);
-											})}
+  return (
+    <AdminShell title="Dashboard" userName={initialUserName} role={initialRole}>
+      <div className="space-y-6">
+        {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
-											<path
-												d={buildLinePath(chartData.map((point) => point.applications), plotWidth, plotHeight, chartMax)}
-												fill="none"
-												stroke={chartColors.applications}
-												strokeWidth="5"
-												strokeLinecap="round"
-												strokeLinejoin="round"
-											/>
+        <section className="overflow-hidden rounded-[28px] border border-[#cfd7e3] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+          <div className="flex flex-col gap-4 bg-[#1d4f9d] px-5 py-5 text-white md:flex-row md:items-center md:justify-between md:px-8">
+            <div>
+              <h2 className="text-2xl font-semibold">Schedules Calendar</h2>
+              <p className="text-sm text-white/75">
+                Weekly and monthly views for applications currently moved into Schedule.
+              </p>
+            </div>
+            <div className="inline-flex rounded-xl bg-white/15 p-1">
+              {VIEW_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setCalendarView(option.key)}
+                  className={[
+                    "rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                    calendarView === option.key ? "bg-[#0f1f77] text-white" : "text-white/70 hover:text-white",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-											{chartData.map((point, index) => {
-												const x = getChartPointPosition(index, chartData.length, plotWidth);
-												const y = getChartY(point.applications, plotHeight, chartMax);
+          <div className="border-b border-[#e2e8f0] px-5 py-4 md:px-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#164896]">Current View</p>
+                <h3 className="mt-1 text-2xl font-semibold text-slate-900">{title}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => moveCalendar(-1)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#cbd5e1] text-slate-600 transition hover:bg-slate-50"
+                  aria-label="Previous range"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnchorDate(startOfDay(new Date()))}
+                  className="rounded-full bg-[#164896] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveCalendar(1)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#cbd5e1] text-slate-600 transition hover:bg-slate-50"
+                  aria-label="Next range"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
 
-												return (
-													<g key={point.key}>
-														<circle cx={x} cy={y} r="7" fill="white" stroke={chartColors.applications} strokeWidth="4" />
-														<text
-															x={x}
-															y={Math.max(16, y - 14)}
-															textAnchor="middle"
-															fontSize="13"
-															fontWeight="700"
-															fill={chartColors.applications}
-														>
-															{point.applications}
-														</text>
-														<text
-															x={x}
-															y={plotHeight + 30}
-															textAnchor="middle"
-															fontSize="12"
-															fontWeight="600"
-															fill="#64748b"
-														>
-															{point.label}
-														</text>
-														<title>{`Applications: ${point.applications} (${point.label})`}</title>
-													</g>
-												);
-											})}
-										</g>
-									</svg>
-								</div>
+          <div className="px-5 py-6 md:px-8">
+            {loading ? (
+              <div className="flex h-[420px] items-center justify-center text-sm text-slate-500">Loading schedules...</div>
+            ) : calendarView === "week" ? (
+              <div className="grid gap-4 xl:grid-cols-7">
+                {weeklySchedules.map(({ day, items }) => (
+                  <div key={day.toISOString()} className="rounded-[24px] border border-[#d9e2ef] bg-[#f8fafc] p-4">
+                    <div className="border-b border-[#dbe4ef] pb-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#164896]">
+                        {WEEKDAY_LABELS[(day.getDay() + 6) % 7]}
+                      </p>
+                      <h4 className="mt-1 text-lg font-semibold text-slate-900">
+                        {formatDate(day, { month: "short", day: "numeric" })}
+                      </h4>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      {items.length ? (
+                        items.map((item) => (
+                          <article
+                            key={item.id}
+                            className="rounded-[18px] border border-[#c9d8ee] bg-white p-3 shadow-sm"
+                          >
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#164896]">
+                              <CalendarClock size={14} />
+                              {formatTime(item.scheduledAt)}
+                            </div>
+                            <p className="mt-2 text-sm font-semibold text-slate-900">{item.fullName}</p>
+                            <p className="mt-1 text-xs text-slate-500">{getApplicationVisaLabel(item.visaType)}</p>
+                          </article>
+                        ))
+                      ) : (
+                        <div className="rounded-[18px] border border-dashed border-[#c9d8ee] px-3 py-6 text-center text-sm text-slate-400">
+                          No schedules
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div>
+                <div className="mb-3 grid grid-cols-7 gap-3">
+                  {WEEKDAY_LABELS.map((label) => (
+                    <div key={label} className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      {label}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-3">
+                  {monthlySchedules.map(({ day, inCurrentMonth, items }) => (
+                    <div
+                      key={day.toISOString()}
+                      className={[
+                        "min-h-[150px] rounded-[20px] border p-3",
+                        inCurrentMonth ? "border-[#d9e2ef] bg-[#f8fafc]" : "border-[#edf2f7] bg-[#fbfdff]",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm font-semibold ${inCurrentMonth ? "text-slate-900" : "text-slate-400"}`}>
+                          {day.getDate()}
+                        </span>
+                        {items.length ? (
+                          <span className="rounded-full bg-[#164896] px-2 py-0.5 text-[11px] font-semibold text-white">
+                            {items.length}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        {items.slice(0, 3).map((item) => (
+                          <article
+                            key={item.id}
+                            className="rounded-[16px] border border-[#c9d8ee] bg-white px-2.5 py-2 text-left shadow-sm"
+                          >
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#164896]">
+                              {formatTime(item.scheduledAt)}
+                            </p>
+                            <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-700">{item.fullName}</p>
+                          </article>
+                        ))}
+                        {items.length > 3 ? (
+                          <p className="text-xs font-medium text-slate-500">+{items.length - 3} more</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
-								<div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600">
-									<span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: chartColors.applications }} />Applications</span>
-								</div>
-							</div>
-						)}
-					</div>
-				</section>
+        <section className="rounded-[28px] border border-[#d4dce6] bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] md:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xl font-semibold text-slate-900">Upcoming Scheduled Applications</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Quick list of the nearest scheduled applicants and appointment times.
+              </p>
+            </div>
+            <span className="rounded-full bg-[#eef3fa] px-3 py-1 text-sm font-semibold text-[#164896]">
+              {schedules.length} total
+            </span>
+          </div>
 
-				<section className="rounded-[28px] border border-[#d4dce6] bg-[#f6f7f9] p-5 shadow-[0_16px_34px_rgba(15,23,42,0.08)] md:p-6">
-					<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-						{SUMMARY_CARDS.map((card) => (
-							<CountCard
-								key={card.status}
-								count={counts[card.status]}
-								status={card.status}
-								icon={card.icon}
-								tone={card.tone}
-								onClick={() => router.push(`/admin/applications?status=${card.status}`)}
-								disabled={!canManageApplications}
-							/>
-						))}
-					</div>
-				</section>
-			</div>
-		</AdminShell>
-	);
+          <div className="mt-5 space-y-3">
+            {loading ? null : upcomingSchedules.length ? (
+              upcomingSchedules.map((item) => (
+                <article
+                  key={item.id}
+                  className="flex flex-col gap-3 rounded-[20px] border border-[#d9e2ef] bg-[#f8fafc] px-4 py-4 md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{item.fullName}</p>
+                    <p className="mt-1 text-sm text-slate-500">{getApplicationVisaLabel(item.visaType)}</p>
+                  </div>
+                  <div className="text-sm font-medium text-slate-700">
+                    {formatDateTime(item.scheduledAt)}
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-[22px] border border-dashed border-[#c9d8ee] px-4 py-10 text-center text-sm text-slate-500">
+                No scheduled applications yet.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </AdminShell>
+  );
 }

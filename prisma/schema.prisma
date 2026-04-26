@@ -102,6 +102,9 @@ model ServicesPage {
   sectionTitle String?
   sectionDesc  String?
   requirementsText String?
+  applicationAvailableDays String[] @default([])
+  applicationVisaTypes Json?
+  applicationTimeSlots Json?
   updatedAt    DateTime @updatedAt
 }
 
@@ -158,8 +161,9 @@ model Media {
 enum ApplicationStatus {
   NEW
   IN_REVIEW
+  SCHEDULED
   APPROVED
-  DECLINED
+  PENDING
 }
 
 model ApplicationEntry {
@@ -173,13 +177,35 @@ model ApplicationEntry {
   availableTime String
   availableDay  String
   status        ApplicationStatus  @default(NEW)
+  scheduledAt   DateTime?
   archivedAt    DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
   files         ApplicationFile[]
+  statusHistory ApplicationStatusHistory[]
 
   @@index([archivedAt])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model ApplicationStatusHistory {
+  id          String             @id @default(cuid())
+  applicationId String
+  fromStatus  ApplicationStatus?
+  toStatus    ApplicationStatus
+  note        String
+  scheduledAt DateTime?
+  actorUserId Int?
+  actorName   String?
+  actorEmail  String?
+  createdAt   DateTime           @default(now())
+
+  application ApplicationEntry   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt(sort: Desc)])
+  @@index([toStatus, createdAt(sort: Desc)])
 }
 
 model ApplicationFile {
@@ -212,4 +238,3 @@ model WebsiteView {
   @@index([path])
   @@index([visitorId])
 }
-

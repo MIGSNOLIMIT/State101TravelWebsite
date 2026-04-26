@@ -8,11 +8,11 @@ const HELP_CONTENT = [
   {
     match: (pathname) => pathname === "/admin/dashboard",
     title: "Dashboard Guide",
-    intro: "This tab gives a quick summary of application activity.",
+    intro: "This tab now focuses on scheduled applications and their appointment calendar.",
     items: [
-      "Use the cards to monitor recent, in-review, approved, and rejected applications.",
-      "Editors can review dashboard metrics here, but only admins can manage application records.",
-      "This page is meant for fast monitoring, not deep editing.",
+      "Switch between Weekly and Monthly to review scheduled applicants in calendar form.",
+      "Weekly view shows applicant names and schedule times directly inside each day column.",
+      "Use Today and the arrow buttons to jump through upcoming or past schedule ranges.",
     ],
   },
   {
@@ -30,10 +30,10 @@ const HELP_CONTENT = [
     title: "Applications Guide",
     intro: "This tab is where admins review and manage applicant entries.",
     items: [
-			"Use the status cards and chips to move quickly between Recent, In-Review, Approved, Rejected, and Archived records.",
+			"Use the status cards and chips to move quickly between Recent, In-Review, Schedules, Approved, Pending, and Archived records.",
 			"Search matches the applicant name, email address, and visa type so you can find a record without leaving the current status view.",
       "View Details opens the full applicant profile and uploaded files for the selected applicant.",
-			"Workflow actions should be used in order: move new applicants into review first, then approve or reject once the requirements have been checked.",
+			"Every workflow action now requires a note, and moving an applicant into Schedule also requires a date and time.",
 			"Backup ZIP lets you export the current applications archive, while Import Backup only adds missing records and will warn you when the same backup already exists.",
     ],
   },

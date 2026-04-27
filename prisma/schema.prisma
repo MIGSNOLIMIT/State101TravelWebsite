@@ -166,6 +166,12 @@ enum ApplicationStatus {
   PENDING
 }
 
+enum DashboardCalendarNoteTag {
+  IMPORTANT
+  FOLLOW_UP
+  REMINDER
+}
+
 model ApplicationEntry {
   id            String             @id @default(cuid())
   fullName      String
@@ -218,6 +224,37 @@ model ApplicationFile {
   application   ApplicationEntry @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
+}
+
+model DashboardCalendarNote {
+  id          String   @id @default(cuid())
+  noteDate    String   @unique
+  note        String
+  tag         DashboardCalendarNoteTag @default(REMINDER)
+  actorUserId Int?
+  actorName   String?
+  actorEmail  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  history     DashboardCalendarNoteHistory[]
+}
+
+model DashboardCalendarNoteHistory {
+  id          String   @id @default(cuid())
+  noteId      String
+  noteDate    String
+  note        String
+  tag         DashboardCalendarNoteTag
+  actorUserId Int?
+  actorName   String?
+  actorEmail  String?
+  createdAt   DateTime @default(now())
+
+  dashboardCalendarNote DashboardCalendarNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId, createdAt(sort: Desc)])
+  @@index([noteDate, createdAt(sort: Desc)])
 }
 
 model KnowledgebaseItem {

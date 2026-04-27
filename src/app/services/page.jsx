@@ -42,7 +42,7 @@ export default function ServicesPage() {
   const [page, setPage] = React.useState(null);
   React.useEffect(() => {
     async function fetchPage() {
-      const res = await fetch("/api/admin/services-page");
+      const res = await fetch("/api/admin/services-page", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setPage(data);

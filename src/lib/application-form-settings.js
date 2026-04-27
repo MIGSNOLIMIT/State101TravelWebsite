@@ -103,15 +103,25 @@ export function normalizeApplicationTimeSlots(timeSlots) {
 }
 
 export function normalizeApplicationFormSettings(page = {}) {
+  const availableDaysSource = Array.isArray(page.availableDays)
+    ? page.availableDays
+    : page.applicationAvailableDays;
+  const visaTypesSource = Array.isArray(page.visaTypes)
+    ? page.visaTypes
+    : page.applicationVisaTypes;
+  const timeSlotsSource = Array.isArray(page.timeSlots)
+    ? page.timeSlots
+    : page.applicationTimeSlots;
+
   const availableDays = normalizeLabelList(
-    page.applicationAvailableDays,
+    availableDaysSource,
     DEFAULT_APPLICATION_AVAILABLE_DAYS
   );
   const visaTypes = normalizeLabelList(
-    Array.isArray(page.applicationVisaTypes) ? page.applicationVisaTypes : [],
+    Array.isArray(visaTypesSource) ? visaTypesSource : [],
     DEFAULT_APPLICATION_VISA_TYPES
   );
-  const timeSlots = normalizeApplicationTimeSlots(page.applicationTimeSlots);
+  const timeSlots = normalizeApplicationTimeSlots(timeSlotsSource);
 
   return {
     availableDays,
@@ -119,4 +129,3 @@ export function normalizeApplicationFormSettings(page = {}) {
     timeSlots,
   };
 }
-

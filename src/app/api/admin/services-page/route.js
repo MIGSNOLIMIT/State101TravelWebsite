@@ -4,6 +4,8 @@ import { requireAdminRoles } from '@/lib/admin-access';
 import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
 import { normalizeApplicationFormSettings } from '@/lib/application-form-settings';
 
+export const dynamic = "force-dynamic";
+
 // GET: fetch services page (hero + sections)
 export async function GET() {
   try {
@@ -30,7 +32,14 @@ export async function PUT(req) {
     if (gate.error) return gate.error;
     const { user } = gate;
     const body = await req.json();
-    const normalizedFormSettings = normalizeApplicationFormSettings(body);
+    const normalizedFormSettings = normalizeApplicationFormSettings({
+      availableDays: body.availableDays,
+      visaTypes: body.visaTypes,
+      timeSlots: body.timeSlots,
+      applicationAvailableDays: body.applicationAvailableDays,
+      applicationVisaTypes: body.applicationVisaTypes,
+      applicationTimeSlots: body.applicationTimeSlots,
+    });
     // Update hero
     await prisma.servicesPage.upsert({
       where: { id: body.id || 1 },

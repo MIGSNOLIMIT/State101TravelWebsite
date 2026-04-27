@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   BriefcaseBusiness,
+  CalendarClock,
   CheckCircle2,
   CircleHelp,
   Clock3,
@@ -16,9 +17,9 @@ import {
   PencilLine,
   ScrollText,
   Search,
+  ShieldAlert,
   UserCircle2,
   Users,
-  XCircle,
 } from "lucide-react";
 import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel, normalizeApplicationStatus } from "@/lib/application-status";
 import BackupArchiveNotice from "./BackupArchiveNotice";
@@ -28,9 +29,9 @@ const primaryNav = [
   { href: "/admin/applications", label: "Applications", icon: FileText, adminOnly: true },
   { href: "/admin/applications?status=NEW", label: getApplicationStatusLabel("NEW", "nav"), icon: Clock3, status: "NEW", subItem: true, adminOnly: true },
   { href: "/admin/applications?status=IN_REVIEW", label: getApplicationStatusLabel("IN_REVIEW", "nav"), icon: Search, status: "IN_REVIEW", subItem: true, adminOnly: true },
-  { href: "/admin/applications?status=SCHEDULED", label: getApplicationStatusLabel("SCHEDULED", "nav"), icon: Clock3, status: "SCHEDULED", subItem: true, adminOnly: true },
   { href: "/admin/applications?status=APPROVED", label: getApplicationStatusLabel("APPROVED", "nav"), icon: CheckCircle2, status: "APPROVED", subItem: true, adminOnly: true },
-  { href: "/admin/applications?status=PENDING", label: getApplicationStatusLabel("PENDING", "nav"), icon: XCircle, status: "PENDING", subItem: true, adminOnly: true },
+  { href: "/admin/applications?status=SCHEDULED", label: getApplicationStatusLabel("SCHEDULED", "nav"), icon: CalendarClock, status: "SCHEDULED", subItem: true, adminOnly: true },
+  { href: "/admin/applications?status=PENDING", label: getApplicationStatusLabel("PENDING", "nav"), icon: ShieldAlert, status: "PENDING", subItem: true, adminOnly: true },
   { href: "/admin/reports", label: "Reports", icon: BarChart3, adminOnly: true },
   { href: "/admin/logs", label: "Audit Logs", icon: ScrollText, adminOnly: true },
 ];

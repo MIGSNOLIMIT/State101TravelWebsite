@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, CalendarClock, CheckCircle2, Clock3, Download, Files, Loader2, Plus, RotateCcw, Search, ShieldAlert, XCircle } from "lucide-react";
+import { Archive, CalendarClock, CheckCircle2, Clock3, Download, Files, Loader2, Plus, RotateCcw, Search, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
@@ -62,7 +62,7 @@ const STATUS_CARD_META = {
     activeClass: "border-green-300 bg-green-50 shadow-[0_12px_24px_rgba(22,163,74,0.18)]",
   },
   PENDING: {
-    icon: XCircle,
+    icon: ShieldAlert,
     iconClass: "bg-red-100 text-red-700",
     countClass: "text-red-700",
     labelClass: "text-red-600",

@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, AlertTriangle, Filter, Search, Shield, UserCheck } from "lucide-react";
+import { Activity, AlertTriangle, Filter, Search, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { AUDIT_LOG_ACTION_OPTIONS, AUDIT_LOG_CATEGORIES, AUDIT_LOG_STATUSES, getAuditLabel } from "@/lib/audit-log-config";
@@ -109,11 +109,7 @@ export default function LogsClient({ initialUserName, initialRole }) {
 						<div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
 							<div>
 								<h2 className="text-2xl font-semibold text-[#143f88]">Admin Activity Stream</h2>
-								<p className="mt-1 text-sm text-slate-500">Search and filter enterprise audit events across login history, profile changes, backups, applications, media, and website content updates.</p>
-							</div>
-							<div className="inline-flex items-center gap-2 rounded-xl bg-[#eaf1fb] px-4 py-2 text-sm font-semibold text-[#164896]">
-								<Shield size={16} />
-								Admin-only visibility
+								<p className="mt-1 text-sm text-slate-500">Search and Filter logs.</p>
 							</div>
 						</div>
 

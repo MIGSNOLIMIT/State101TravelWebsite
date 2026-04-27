@@ -51,7 +51,7 @@ export default function ServicesClient({ initialUserName, initialRole }) {
 
     async function fetchPage() {
       setLoading(true);
-      const res = await fetch("/api/admin/services-page");
+      const res = await fetch("/api/admin/services-page", { cache: "no-store" });
       const json = await res.json();
       if (!ignore) {
         setPage(json ? { ...json, ...normalizeApplicationFormSettings(json) } : buildDefaultPage());

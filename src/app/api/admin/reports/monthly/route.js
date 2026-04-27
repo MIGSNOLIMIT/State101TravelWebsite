@@ -12,11 +12,20 @@ const TRACKED_PAGE_LABELS = {
   "/services": "Services Tab",
   "/about": "About Us",
   "/tos": "Terms of Service",
-  "/terms-of-service": "Terms of Service",
 };
 
+function normalizeTrackedPath(path) {
+  const raw = String(path || "/").trim() || "/";
+  const pathname = raw.split("?")[0].split("#")[0] || "/";
+
+  if (pathname === "/home") return "/";
+  if (pathname === "/terms-of-service") return "/tos";
+  if (pathname.length > 1 && pathname.endsWith("/")) return pathname.slice(0, -1);
+  return pathname;
+}
+
 function getTrackedPageLabel(path) {
-  const normalized = String(path || "/").trim() || "/";
+  const normalized = normalizeTrackedPath(path);
   return TRACKED_PAGE_LABELS[normalized] || null;
 }
 
@@ -76,7 +85,8 @@ export async function GET(req) {
       monthly[month].websiteViews += 1;
       visitorSets[month].add(view.visitorId);
       yearlyVisitorSet.add(view.visitorId);
-      topPages.set(view.path, (topPages.get(view.path) || 0) + 1);
+      const normalizedPath = normalizeTrackedPath(view.path);
+      topPages.set(normalizedPath, (topPages.get(normalizedPath) || 0) + 1);
     }
 
     for (const entry of applications) {

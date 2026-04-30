@@ -146,7 +146,16 @@ export default function ApplicationFormPage({ searchParams }) {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Full Name *</label>
-                <input name="fullName" required className="mt-1 w-full rounded border px-3 py-2" placeholder="Juan Dela Cruz" />
+                <input
+                  name="fullName"
+                  required
+                  className="mt-1 w-full rounded border px-3 py-2"
+                  placeholder="Juan Dela Cruz"
+                  pattern="^[^0-9]+$"
+                  title="Full name cannot contain numbers."
+                  autoComplete="name"
+                  maxLength={120}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Email *</label>

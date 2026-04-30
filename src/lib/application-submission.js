@@ -3,6 +3,7 @@ import { validateApplicationStyleEmail } from "@/lib/email-validation";
 import { normalizeApplicationVisaType } from "@/lib/application-visa";
 
 export const APPLICATION_PHONE_REGEX = /^(09\d{9}|\+639\d{9})$/;
+export const APPLICATION_NAME_HAS_DIGIT_REGEX = /\d/;
 
 export const PUBLIC_DUPLICATE_APPLICATION_MESSAGE =
 	"Your application already exists. If you wish to clarify, please visit or contact us.";
@@ -34,11 +35,24 @@ export function normalizeApplicationFields(fields = {}) {
 	};
 }
 
+export function validateApplicationFullName(fullName) {
+	if (APPLICATION_NAME_HAS_DIGIT_REGEX.test(fullName)) {
+		return "Full name cannot contain numbers";
+	}
+
+	return "";
+}
+
 export function validateApplicationFields(fields) {
 	const { fullName, email, phone, address, visaType, availableTime, availableDay } = fields;
 
 	if (!fullName || !email || !phone || !address || !visaType || !availableTime || !availableDay) {
 		return "Missing required fields";
+	}
+
+	const fullNameError = validateApplicationFullName(fullName);
+	if (fullNameError) {
+		return fullNameError;
 	}
 
 	const emailError = validateApplicationStyleEmail(email);

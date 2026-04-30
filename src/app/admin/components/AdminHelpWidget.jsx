@@ -30,10 +30,10 @@ const HELP_CONTENT = [
     title: "Applications Guide",
     intro: "This tab is where admins review and manage applicant entries.",
     items: [
-			"Use the status cards and chips to move quickly between Recent, In-Review, Schedules, Approved, Pending, and Archived records.",
+			"Use the status cards and chips to move quickly between Recent, In Review, Approved, Pending, Scheduled, and Archived records.",
 			"Search matches the applicant name, email address, and visa type so you can find a record without leaving the current status view.",
       "View Details opens the full applicant profile and uploaded files for the selected applicant.",
-			"Every workflow action now requires a note, and moving an applicant into Schedule also requires a date and time.",
+			"Every workflow action now requires a note, and moving an applicant into Scheduled also requires a date and time.",
 			"Backup ZIP lets you export the current applications archive, while Import Backup only adds missing records and will warn you when the same backup already exists.",
     ],
   },

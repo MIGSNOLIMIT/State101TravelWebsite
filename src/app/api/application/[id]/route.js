@@ -3,12 +3,43 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 import {
+  canTransitionApplicationStatus,
+  getAllowedApplicationStatusTransitions,
   getApplicationStatusLabel,
   isApplicationStatus,
   normalizeApplicationStatus,
 } from "@/lib/application-status";
 
 export const dynamic = "force-dynamic";
+
+function formatScheduleSlot(date) {
+  if (!date) return "the selected time";
+
+  return new Date(date).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function buildScheduleConflictPayload(conflict) {
+  return {
+    code: "SCHEDULED_SLOT_TAKEN",
+    error: conflict?.fullName
+      ? `${formatScheduleSlot(conflict.scheduledAt)} is already assigned to ${conflict.fullName}. Please choose another time.`
+      : `${formatScheduleSlot(conflict?.scheduledAt)} is already occupied. Please choose another time.`,
+    conflict: conflict
+      ? {
+          id: conflict.id,
+          fullName: conflict.fullName,
+          scheduledAt: conflict.scheduledAt,
+        }
+      : null,
+  };
+}
 
 async function requireRole(reqRoleCheck = (role) => role === "admin") {
   const session = await getAdminSession();
@@ -41,6 +72,7 @@ export async function GET(_req, { params }) {
 }
 
 export async function PATCH(req, { params }) {
+  let requestedScheduleAt = null;
   try {
     const gate = await requireRole();
     if (gate.error) return gate.error;
@@ -94,17 +126,61 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    const currentStatus = normalizeApplicationStatus(existing.status);
+    const nextScheduledAt =
+      normalizedStatus === "SCHEDULED"
+        ? scheduledAtValue
+        : currentStatus === "SCHEDULED" && normalizedStatus === "APPROVED"
+          ? existing.scheduledAt
+          : null;
+    requestedScheduleAt = normalizedStatus === "SCHEDULED" ? nextScheduledAt : null;
+
+    if (!canTransitionApplicationStatus(currentStatus, normalizedStatus)) {
+      const allowedTransitions = getAllowedApplicationStatusTransitions(currentStatus)
+        .map((value) => getApplicationStatusLabel(value))
+        .join(", ");
+
+      return NextResponse.json(
+        {
+          error: allowedTransitions
+            ? `${getApplicationStatusLabel(currentStatus)} applications can only move to ${allowedTransitions}.`
+            : `${getApplicationStatusLabel(existing.status)} applications cannot be moved to ${getApplicationStatusLabel(normalizedStatus)}.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (normalizedStatus === "SCHEDULED" && nextScheduledAt) {
+      const conflictingEntry = await prisma.applicationEntry.findFirst({
+        where: {
+          id: { not: existing.id },
+          archivedAt: null,
+          status: "SCHEDULED",
+          scheduledAt: nextScheduledAt,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          scheduledAt: true,
+        },
+      });
+
+      if (conflictingEntry) {
+        return NextResponse.json(buildScheduleConflictPayload(conflictingEntry), { status: 409 });
+      }
+    }
+
     const updated = await prisma.applicationEntry.update({
       where: { id },
       data: {
         status: normalizedStatus,
-        scheduledAt: normalizedStatus === "SCHEDULED" ? scheduledAtValue : null,
+        scheduledAt: nextScheduledAt,
         statusHistory: {
           create: {
             fromStatus: existing.status,
             toStatus: normalizedStatus,
             note,
-            scheduledAt: normalizedStatus === "SCHEDULED" ? scheduledAtValue : null,
+            scheduledAt: nextScheduledAt,
             actorUserId: actor.id,
             actorName: actor.name || null,
             actorEmail: actor.email || null,
@@ -131,11 +207,17 @@ export async function PATCH(req, { params }) {
         fromStatus: existing?.status || null,
         toStatus: normalizedStatus,
         note,
-        scheduledAt: normalizedStatus === "SCHEDULED" ? scheduledAtValue : null,
+        scheduledAt: nextScheduledAt,
       },
     });
     return NextResponse.json(updated);
   } catch (e) {
+    if (e?.code === "P2002" && requestedScheduleAt) {
+      return NextResponse.json(
+        buildScheduleConflictPayload({ id: null, fullName: null, scheduledAt: requestedScheduleAt }),
+        { status: 409 }
+      );
+    }
     console.error("application patch error", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }

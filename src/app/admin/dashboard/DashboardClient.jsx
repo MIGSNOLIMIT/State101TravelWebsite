@@ -6,12 +6,14 @@ import Link from "next/link";
 import { CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileText, Pin, Save, Search, ShieldAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
+import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel } from "@/lib/application-status";
 import { getApplicationVisaLabel } from "@/lib/application-visa";
 
 const VIEW_OPTIONS = [
   { key: "week", label: "Weekly" },
   { key: "month", label: "Monthly" },
 ];
+const UPCOMING_SCHEDULES_STEP = 5;
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const NOTE_MAX_LENGTH = 500;
@@ -26,43 +28,33 @@ const NOTE_TAG_STYLES = {
   REMINDER: "border-amber-200 bg-amber-50 text-amber-700",
 };
 
-const DASHBOARD_STATUS_CARDS = [
-  {
-    status: "NEW",
-    title: "Recent Applications",
+const DASHBOARD_STATUS_CARD_META = {
+  NEW: {
     icon: Clock3,
     accentClass: "border-slate-200 bg-slate-50 text-slate-700",
     valueClass: "text-slate-900",
   },
-  {
-    status: "SCHEDULED",
-    title: "Scheduled Applications",
-    icon: CalendarClock,
-    accentClass: "border-blue-200 bg-blue-50 text-blue-700",
-    valueClass: "text-[#164896]",
-  },
-  {
-    status: "APPROVED",
-    title: "Approved Applications",
-    icon: CheckCircle2,
-    accentClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    valueClass: "text-emerald-700",
-  },
-  {
-    status: "PENDING",
-    title: "Pending Applications",
-    icon: ShieldAlert,
-    accentClass: "border-rose-200 bg-rose-50 text-rose-700",
-    valueClass: "text-rose-700",
-  },
-  {
-    status: "IN_REVIEW",
-    title: "In Review Applications",
+  IN_REVIEW: {
     icon: Search,
     accentClass: "border-amber-200 bg-amber-50 text-amber-700",
     valueClass: "text-amber-700",
   },
-];
+  APPROVED: {
+    icon: CheckCircle2,
+    accentClass: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    valueClass: "text-emerald-700",
+  },
+  PENDING: {
+    icon: ShieldAlert,
+    accentClass: "border-rose-200 bg-rose-50 text-rose-700",
+    valueClass: "text-rose-700",
+  },
+  SCHEDULED: {
+    icon: CalendarClock,
+    accentClass: "border-blue-200 bg-blue-50 text-blue-700",
+    valueClass: "text-[#164896]",
+  },
+};
 
 function startOfDay(date) {
   const value = new Date(date);
@@ -198,6 +190,7 @@ export default function DashboardClient({ initialUserName, initialRole }) {
   const [noteHistory, setNoteHistory] = useState([]);
   const [savingNote, setSavingNote] = useState(false);
   const [loadingNoteDetails, setLoadingNoteDetails] = useState(false);
+  const [visibleUpcomingCount, setVisibleUpcomingCount] = useState(UPCOMING_SCHEDULES_STEP);
 
   useEffect(() => {
     let ignore = false;
@@ -213,7 +206,15 @@ export default function DashboardClient({ initialUserName, initialRole }) {
         const json = await response.json();
         if (ignore) return;
 
-        setSchedules(sortSchedules(json.schedules || []));
+        const sortedSchedules = sortSchedules(json.schedules || []);
+        setSchedules(sortedSchedules);
+        if (sortedSchedules.length) {
+          const now = new Date();
+          const nextScheduledItem = sortedSchedules.find((item) => item?.scheduledAt && new Date(item.scheduledAt) >= now) || sortedSchedules[0];
+          if (nextScheduledItem?.scheduledAt) {
+            setAnchorDate(startOfDay(new Date(nextScheduledItem.scheduledAt)));
+          }
+        }
         setCalendarNotes(buildNotesMap(json.notes || []));
         setStatusCounts((current) => ({
           ...current,
@@ -261,10 +262,18 @@ export default function DashboardClient({ initialUserName, initialRole }) {
   const upcomingSchedules = useMemo(
     () =>
       schedules
-        .filter((item) => item.scheduledAt && new Date(item.scheduledAt) >= new Date())
-        .slice(0, 8),
+        .filter((item) => item.scheduledAt && new Date(item.scheduledAt) >= new Date()),
     [schedules]
   );
+
+  const visibleUpcomingSchedules = useMemo(
+    () => upcomingSchedules.slice(0, visibleUpcomingCount),
+    [upcomingSchedules, visibleUpcomingCount]
+  );
+
+  useEffect(() => {
+    setVisibleUpcomingCount((current) => Math.min(Math.max(UPCOMING_SCHEDULES_STEP, current), Math.max(upcomingSchedules.length, UPCOMING_SCHEDULES_STEP)));
+  }, [upcomingSchedules.length]);
 
   const title =
     calendarView === "week"
@@ -445,7 +454,8 @@ export default function DashboardClient({ initialUserName, initialRole }) {
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {DASHBOARD_STATUS_CARDS.map((card) => {
+            {APPLICATION_STATUS_ORDER.map((status) => {
+              const card = DASHBOARD_STATUS_CARD_META[status];
               const Icon = card.icon;
               const sharedClassName = [
                 "group flex h-full flex-col justify-between rounded-[24px] border-2 px-5 py-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_10px_24px_rgba(15,23,42,0.08)] transition",
@@ -461,18 +471,18 @@ export default function DashboardClient({ initialUserName, initialRole }) {
                       <Icon size={22} strokeWidth={2.2} />
                     </span>
                     <span className={`text-4xl font-semibold leading-none ${card.valueClass}`}>
-                      {loading ? "-" : statusCounts[card.status] || 0}
+                      {loading ? "-" : statusCounts[status] || 0}
                     </span>
                   </div>
                   <div className="mt-8 border-t border-[#e6edf5] pt-4">
-                    <h3 className="text-lg font-semibold text-slate-900">{card.title}</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">{getApplicationStatusLabel(status)} Applications</h3>
                   </div>
                 </>
               );
 
               if (!isAdmin) {
                 return (
-                  <div key={card.status} className={sharedClassName} aria-disabled="true">
+                  <div key={status} className={sharedClassName} aria-disabled="true">
                     {content}
                   </div>
                 );
@@ -480,8 +490,8 @@ export default function DashboardClient({ initialUserName, initialRole }) {
 
               return (
                 <Link
-                  key={card.status}
-                  href={`/admin/applications?status=${card.status}`}
+                  key={status}
+                  href={`/admin/applications?status=${status}`}
                   className={sharedClassName}
                 >
                   {content}
@@ -494,7 +504,7 @@ export default function DashboardClient({ initialUserName, initialRole }) {
         <section className="overflow-hidden rounded-[28px] border border-[#cfd7e3] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
           <div className="flex flex-col gap-4 bg-[#1d4f9d] px-5 py-5 text-white md:flex-row md:items-center md:justify-between md:px-8">
             <div>
-              <h2 className="text-2xl font-semibold">Schedules Calendar</h2>
+              <h2 className="text-2xl font-semibold">Scheduled Calendar</h2>
             </div>
             <div className="inline-flex rounded-xl bg-white/15 p-1">
               {VIEW_OPTIONS.map((option) => (
@@ -674,13 +684,13 @@ export default function DashboardClient({ initialUserName, initialRole }) {
               <h3 className="text-xl font-semibold text-slate-900">Upcoming Scheduled Applications</h3>
             </div>
             <span className="rounded-full bg-[#eef3fa] px-3 py-1 text-sm font-semibold text-[#164896]">
-              {schedules.length} total
+              {upcomingSchedules.length} total
             </span>
           </div>
 
           <div className="mt-5 space-y-3">
             {loading ? null : upcomingSchedules.length ? (
-              upcomingSchedules.map((item) => (
+              visibleUpcomingSchedules.map((item) => (
                 <article
                   key={item.id}
                   className="flex flex-col gap-3 rounded-[20px] border-2 border-black bg-[#f8fafc] px-4 py-4 md:flex-row md:items-center md:justify-between"
@@ -700,6 +710,34 @@ export default function DashboardClient({ initialUserName, initialRole }) {
               </div>
             )}
           </div>
+
+          {!loading && upcomingSchedules.length > UPCOMING_SCHEDULES_STEP ? (
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              {visibleUpcomingCount < upcomingSchedules.length ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleUpcomingCount((current) => Math.min(current + UPCOMING_SCHEDULES_STEP, upcomingSchedules.length))
+                  }
+                  className="rounded-full bg-[#164896] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#103773]"
+                >
+                  Show More Scheduled
+                </button>
+              ) : null}
+
+              {visibleUpcomingCount > UPCOMING_SCHEDULES_STEP ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleUpcomingCount((current) => Math.max(UPCOMING_SCHEDULES_STEP, current - UPCOMING_SCHEDULES_STEP))
+                  }
+                  className="rounded-full border border-[#cbd5e1] px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Show Less Scheduled
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       </div>
 

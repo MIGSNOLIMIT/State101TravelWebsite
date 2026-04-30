@@ -1,22 +1,16 @@
-export const APPLICATION_STATUS_ORDER = ["NEW", "IN_REVIEW", "SCHEDULED", "APPROVED", "PENDING"];
+export const APPLICATION_STATUS_ORDER = ["NEW", "IN_REVIEW", "APPROVED", "PENDING", "SCHEDULED"];
 
 export const APPLICATION_STATUS_LABELS = {
   NEW: "Recent",
-  IN_REVIEW: "In-Review",
+  IN_REVIEW: "In Review",
   SCHEDULED: "Scheduled",
   APPROVED: "Approved",
   PENDING: "Pending",
 };
 
-export const APPLICATION_STATUS_NAV_LABELS = {
-  ...APPLICATION_STATUS_LABELS,
-  SCHEDULED: "Schedules",
-};
+export const APPLICATION_STATUS_NAV_LABELS = { ...APPLICATION_STATUS_LABELS };
 
-export const APPLICATION_STATUS_SUMMARY_LABELS = {
-  ...APPLICATION_STATUS_LABELS,
-  SCHEDULED: "Schedules",
-};
+export const APPLICATION_STATUS_SUMMARY_LABELS = { ...APPLICATION_STATUS_LABELS };
 
 export const APPLICATION_STATUS_OPTIONS = APPLICATION_STATUS_ORDER.map((value) => ({
   value,
@@ -25,32 +19,39 @@ export const APPLICATION_STATUS_OPTIONS = APPLICATION_STATUS_ORDER.map((value) =
 
 export const APPLICATION_STATUS_ACTIONS = {
   NEW: [
-    { status: "IN_REVIEW", label: "Move to In-Review", tone: "review" },
-    { status: "SCHEDULED", label: "Move to Schedule", tone: "scheduled" },
-    { status: "APPROVED", label: "Approve", tone: "approved" },
-    { status: "PENDING", label: "Move to Pending", tone: "pending" },
+    { status: "IN_REVIEW", label: "Move to In Review", tone: "review" },
   ],
   IN_REVIEW: [
-    { status: "SCHEDULED", label: "Move to Schedule", tone: "scheduled" },
-    { status: "APPROVED", label: "Approve", tone: "approved" },
-    { status: "PENDING", label: "Move to Pending", tone: "pending" },
-  ],
-  SCHEDULED: [
-    { status: "IN_REVIEW", label: "Move to In-Review", tone: "review" },
     { status: "APPROVED", label: "Approve", tone: "approved" },
     { status: "PENDING", label: "Move to Pending", tone: "pending" },
   ],
   APPROVED: [
     { status: "SCHEDULED", label: "Move to Schedule", tone: "scheduled" },
-    { status: "IN_REVIEW", label: "Move to In-Review", tone: "review" },
     { status: "PENDING", label: "Move to Pending", tone: "pending" },
   ],
   PENDING: [
     { status: "SCHEDULED", label: "Move to Schedule", tone: "scheduled" },
-    { status: "IN_REVIEW", label: "Move to In-Review", tone: "review" },
-    { status: "APPROVED", label: "Approve", tone: "approved" },
+  ],
+  SCHEDULED: [
+    { status: "PENDING", label: "Move to Pending", tone: "pending" },
   ],
 };
+
+export function getAllowedApplicationStatusTransitions(status) {
+  const normalized = normalizeApplicationStatus(status);
+  return (APPLICATION_STATUS_ACTIONS[normalized] || []).map((action) => action.status);
+}
+
+export function canTransitionApplicationStatus(fromStatus, toStatus) {
+  const current = normalizeApplicationStatus(fromStatus);
+  const next = normalizeApplicationStatus(toStatus);
+
+  if (current === next) {
+    return false;
+  }
+
+  return getAllowedApplicationStatusTransitions(current).includes(next);
+}
 
 export function normalizeApplicationStatus(value) {
   const normalized = String(value || "").trim().toUpperCase();

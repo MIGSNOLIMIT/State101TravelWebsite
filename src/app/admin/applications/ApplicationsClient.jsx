@@ -83,6 +83,11 @@ function formatDate(date) {
   return new Date(date).toLocaleString();
 }
 
+function formatTimeOnly(date) {
+  if (!date) return "";
+  return new Date(date).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 function toDateTimeLocalValue(date) {
   if (!date) return "";
   const value = new Date(date);
@@ -90,6 +95,18 @@ function toDateTimeLocalValue(date) {
 
   const timezoneOffset = value.getTimezoneOffset() * 60 * 1000;
   return new Date(value.getTime() - timezoneOffset).toISOString().slice(0, 16);
+}
+
+function getDatePartFromDateTimeLocal(value) {
+  return String(value || "").slice(0, 10);
+}
+
+function buildScheduleConflictMessage(item) {
+  if (!item) {
+    return "That schedule time is already occupied. Please choose another time.";
+  }
+
+  return `${formatDate(item.scheduledAt)} is already assigned to ${item.fullName}. Please choose another time.`;
 }
 
 const INITIAL_WALK_IN_FORM = {
@@ -225,6 +242,12 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
         return true;
       } else {
         const err = await res.json().catch(() => ({}));
+        if (err?.code === "SCHEDULED_SLOT_TAKEN") {
+          setStatusDialog((prev) => (prev && prev.id === id ? { ...prev, error: err.error || "That schedule time is already occupied." } : prev));
+          if (typeof window !== "undefined") {
+            window.alert(err?.error || "That schedule time is already occupied. Please choose another time.");
+          }
+        }
         setMsg(err?.error || "Failed to update status");
         setMsgTone("error");
         return false;
@@ -246,6 +269,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
       toStatus: status,
       note: "",
       scheduledAt: status === "SCHEDULED" ? toDateTimeLocalValue(item.scheduledAt) : "",
+      error: "",
     });
   };
 
@@ -382,14 +406,17 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
   const activeItems = useMemo(() => items.filter((item) => !item.archivedAt), [items]);
   const archivedItems = useMemo(() => items.filter((item) => Boolean(item.archivedAt)), [items]);
+  const statusDialogId = statusDialog?.id || "";
+  const statusDialogToStatus = statusDialog?.toStatus || "";
+  const statusDialogScheduledAt = statusDialog?.scheduledAt || "";
 
   const counts = useMemo(
     () => ({
-      NEW: activeItems.filter((item) => item.status === "NEW").length,
-      IN_REVIEW: activeItems.filter((item) => item.status === "IN_REVIEW").length,
-      SCHEDULED: activeItems.filter((item) => item.status === "SCHEDULED").length,
-      APPROVED: activeItems.filter((item) => item.status === "APPROVED").length,
-      PENDING: activeItems.filter((item) => item.status === "PENDING").length,
+      NEW: activeItems.filter((item) => normalizeApplicationStatus(item.status) === "NEW").length,
+      IN_REVIEW: activeItems.filter((item) => normalizeApplicationStatus(item.status) === "IN_REVIEW").length,
+      SCHEDULED: activeItems.filter((item) => normalizeApplicationStatus(item.status) === "SCHEDULED").length,
+      APPROVED: activeItems.filter((item) => normalizeApplicationStatus(item.status) === "APPROVED").length,
+      PENDING: activeItems.filter((item) => normalizeApplicationStatus(item.status) === "PENDING").length,
     }),
     [activeItems]
   );
@@ -403,7 +430,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
           item.email.toLowerCase().includes(search.toLowerCase()) ||
           item.visaType.toLowerCase().includes(search.toLowerCase());
 
-        return matchesSearch && item.status === activeStatus;
+        return matchesSearch && normalizeApplicationStatus(item.status) === activeStatus;
       }),
     [activeItems, activeStatus, search]
   );
@@ -421,6 +448,43 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
       }),
     [archivedItems, search]
   );
+
+  const occupiedScheduledSlots = useMemo(
+    () =>
+      activeItems
+        .filter(
+          (item) =>
+            normalizeApplicationStatus(item.status) === "SCHEDULED" &&
+            item.scheduledAt &&
+            item.id !== statusDialogId
+        )
+        .map((item) => ({
+          id: item.id,
+          fullName: item.fullName,
+          scheduledAt: item.scheduledAt,
+          localDateTime: toDateTimeLocalValue(item.scheduledAt),
+        })),
+    [activeItems, statusDialogId]
+  );
+
+  const occupiedSlotsForSelectedDay = useMemo(() => {
+    if (statusDialogToStatus !== "SCHEDULED" || !statusDialogScheduledAt) {
+      return [];
+    }
+
+    const selectedDay = getDatePartFromDateTimeLocal(statusDialogScheduledAt);
+    return occupiedScheduledSlots
+      .filter((item) => getDatePartFromDateTimeLocal(item.localDateTime) === selectedDay)
+      .sort((left, right) => left.localDateTime.localeCompare(right.localDateTime));
+  }, [occupiedScheduledSlots, statusDialogScheduledAt, statusDialogToStatus]);
+
+  const conflictingScheduledItem = useMemo(() => {
+    if (statusDialogToStatus !== "SCHEDULED" || !statusDialogScheduledAt) {
+      return null;
+    }
+
+    return occupiedScheduledSlots.find((item) => item.localDateTime === statusDialogScheduledAt) || null;
+  }, [occupiedScheduledSlots, statusDialogScheduledAt, statusDialogToStatus]);
 
   const setStatusView = (status) => {
     const nextStatus = normalizeApplicationStatus(status);
@@ -573,6 +637,10 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                       onChange={(event) => onWalkInFieldChange("fullName", event.target.value)}
                       className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
                       placeholder="Juan Dela Cruz"
+                      pattern="^[^0-9]+$"
+                      title="Full name cannot contain numbers."
+                      autoComplete="name"
+                      maxLength={120}
                     />
                   </label>
 
@@ -900,7 +968,8 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
             ) : (
               <div className="space-y-4">
                 {filteredActiveItems.map((item, index) => {
-                  const actions = APPLICATION_STATUS_ACTIONS[item.status] || [];
+                  const normalizedItemStatus = normalizeApplicationStatus(item.status);
+                  const actions = APPLICATION_STATUS_ACTIONS[normalizedItemStatus] || [];
                   const isBusy = statusUpdatingId === item.id;
 
                   return (
@@ -1033,6 +1102,12 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
             </div>
 
             <div className="mt-5 grid gap-4">
+              {statusDialog.error ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {statusDialog.error}
+                </div>
+              ) : null}
+
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-sm font-medium text-slate-700">
                   Current Status
@@ -1061,10 +1136,23 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                     type="datetime-local"
                     value={statusDialog.scheduledAt}
                     onChange={(event) =>
-                      setStatusDialog((prev) => (prev ? { ...prev, scheduledAt: event.target.value } : prev))
+                      setStatusDialog((prev) => (prev ? { ...prev, scheduledAt: event.target.value, error: "" } : prev))
                     }
                     className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896]"
                   />
+                  {occupiedSlotsForSelectedDay.length ? (
+                    <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
+                      <p className="font-semibold uppercase tracking-[0.14em]">Occupied times on this day</p>
+                      <p className="mt-1">
+                        {occupiedSlotsForSelectedDay.map((item) => `${formatTimeOnly(item.scheduledAt)} - ${item.fullName}`).join(", ")}
+                      </p>
+                    </div>
+                  ) : null}
+                  {conflictingScheduledItem ? (
+                    <p className="mt-2 text-sm font-medium text-red-600">
+                      {buildScheduleConflictMessage(conflictingScheduledItem)}
+                    </p>
+                  ) : null}
                 </label>
               ) : null}
 
@@ -1094,6 +1182,15 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                 disabled={statusUpdatingId === statusDialog.id}
                 onClick={async () => {
                   const pending = statusDialog;
+                  if (pending.toStatus === "SCHEDULED" && conflictingScheduledItem) {
+                    const conflictMessage = buildScheduleConflictMessage(conflictingScheduledItem);
+                    setStatusDialog((prev) => (prev ? { ...prev, error: conflictMessage } : prev));
+                    if (typeof window !== "undefined") {
+                      window.alert(conflictMessage);
+                    }
+                    return;
+                  }
+
                   const success = await doChangeStatus({
                     id: pending.id,
                     status: pending.toStatus,

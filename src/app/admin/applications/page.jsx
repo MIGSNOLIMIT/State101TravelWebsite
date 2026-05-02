@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 import ApplicationsClient from "./ApplicationsClient";
 
 export default async function ApplicationsPage() {
@@ -13,12 +14,12 @@ export default async function ApplicationsPage() {
     redirect("/access-denied");
   }
 
-  const user = await prisma.user.findUnique({
+  const user = withEffectiveAdminRole(await prisma.user.findUnique({
     where: { id: session.userId },
     select: { name: true, email: true, role: true },
-  });
+  }));
 
-  if (!user || user.role !== "admin") {
+  if (!user || !canAccessAdminRoles(user, ["admin"])) {
     redirect("/access-denied");
   }
 

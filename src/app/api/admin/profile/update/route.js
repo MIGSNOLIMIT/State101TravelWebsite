@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/auth';
+import { isAdminRole, isSuperAdminEmail, withEffectiveAdminRole } from '@/lib/admin-role';
 import bcrypt from 'bcryptjs';
 import { validateApplicationStyleEmail } from '@/lib/email-validation';
 import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
@@ -11,7 +12,7 @@ export async function PUT(req) {
 
   try {
     const { name, email, password, currentPassword } = await req.json();
-    const user = await prisma.user.findUnique({ where: { id: session.userId } });
+    const user = withEffectiveAdminRole(await prisma.user.findUnique({ where: { id: session.userId } }));
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const updateData = {};
@@ -21,8 +22,11 @@ export async function PUT(req) {
     }
 
     if (email !== undefined) {
-      if (user.role !== 'admin') {
+      if (!isAdminRole(user.role)) {
         return NextResponse.json({ error: 'Only admins can edit email.' }, { status: 403 });
+      }
+      if (isSuperAdminEmail(user.email)) {
+        return NextResponse.json({ error: 'The super admin email cannot be changed.' }, { status: 403 });
       }
 
       const normalizedEmail = String(email).trim();

@@ -7,20 +7,21 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'migsnolimit23@gmail.com'; // Change to your admin Gmail
-  const password = '12345'; // Change to your desired password
+  const email = 'statetravel101@gmail.com';
+  const password = '12345';
   const hashed = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.upsert({
     where: { email },
-    update: { password: hashed },
+    update: { password: hashed, role: 'admin' },
     create: {
       email,
       password: hashed,
+      role: 'admin',
     },
   });
 
-  console.log('Admin user created/updated:', user.email);
+  console.log('Super admin user created/updated:', user.email);
   await prisma.$disconnect();
 }
 

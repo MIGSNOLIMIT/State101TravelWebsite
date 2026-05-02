@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 import AdminLoginClient from "./AdminLoginClient";
 
 export const dynamic = "force-dynamic";
@@ -9,12 +10,12 @@ export default async function AdminLoginPage() {
 	const session = await getAdminSession();
 
 	if (session?.userId) {
-		const user = await prisma.user.findUnique({
+		const user = withEffectiveAdminRole(await prisma.user.findUnique({
 			where: { id: session.userId },
-			select: { role: true },
-		});
+			select: { role: true, email: true },
+		}));
 
-		if (user && ["admin", "editor"].includes(user.role)) {
+		if (user && canAccessAdminRoles(user, ["admin", "editor"])) {
 			redirect("/admin/dashboard");
 		}
 	}

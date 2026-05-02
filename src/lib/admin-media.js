@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { createPublicMediaUrl, getFolderFromStoragePath, inferAltText, inferMediaTypeFromName } from "@/lib/media";
 import { getStorageBucketName, getStorageClient } from "@/lib/supabase-storage";
+import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 
 export async function requireAdminEditor() {
   const session = await getAdminSession();
@@ -10,11 +11,12 @@ export async function requireAdminEditor() {
   }
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user || !["admin", "editor"].includes(user.role)) {
+  const effectiveUser = withEffectiveAdminRole(user);
+  if (!effectiveUser || !canAccessAdminRoles(effectiveUser, ["admin", "editor"])) {
     return { error: { message: "Forbidden", status: 403 } };
   }
 
-  return { user };
+  return { user: effectiveUser };
 }
 
 async function listFolderRecursively(folder = "") {

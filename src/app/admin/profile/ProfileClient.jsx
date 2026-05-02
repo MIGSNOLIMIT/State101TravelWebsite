@@ -3,6 +3,7 @@
 import { Eye, EyeOff, Save } from "lucide-react";
 import { useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
+import { isAdminRole, isSuperAdminEmail } from "@/lib/admin-role";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
 function PasswordField({ label, value, onChange, placeholder, visible, onToggle }) {
@@ -43,7 +44,8 @@ export default function ProfileClient({ initialProfile }) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const isAdmin = initialProfile.role === "admin";
+  const isAdmin = isAdminRole(initialProfile.role);
+  const canEditEmail = isAdmin && !isSuperAdminEmail(initialProfile.email);
 
   const handleUpdateProfile = async (event) => {
     event.preventDefault();
@@ -57,7 +59,7 @@ export default function ProfileClient({ initialProfile }) {
       return;
     }
 
-    if (isAdmin) {
+    if (canEditEmail) {
       const emailError = validateApplicationStyleEmail(email);
       if (emailError) {
         setError(emailError);
@@ -73,7 +75,7 @@ export default function ProfileClient({ initialProfile }) {
         currentPassword: currentPassword || undefined,
       };
 
-      if (isAdmin) {
+      if (canEditEmail) {
         payload.email = email;
       }
 
@@ -125,13 +127,13 @@ export default function ProfileClient({ initialProfile }) {
             <label className="block">
               <span className="mb-2 flex items-center gap-2 text-[18px] font-bold leading-none text-[#164896]">
                 <span>Email</span>
-                {!isAdmin ? <span className="text-xs font-medium text-slate-500">(Emails can only be edited by the admin)</span> : null}
+                {!canEditEmail ? <span className="text-xs font-medium text-slate-500">(This email cannot be edited here)</span> : null}
               </span>
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                disabled={!isAdmin}
+                disabled={!canEditEmail}
                 className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896] disabled:cursor-not-allowed disabled:text-slate-700"
               />
             </label>

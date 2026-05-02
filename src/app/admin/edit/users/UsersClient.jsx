@@ -3,6 +3,7 @@
 import { Eye, EyeOff, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
+import { getAdminRoleBadgeLabel } from "@/lib/admin-role";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
 const initialNewUser = { name: "", email: "", password: "", role: "" };
@@ -15,6 +16,7 @@ function roleBadgeClasses(role) {
 }
 
 export default function UsersClient({ initialUserName, initialRole }) {
+  const isSuperAdminSession = initialRole === "super_admin";
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -229,7 +231,7 @@ export default function UsersClient({ initialUserName, initialRole }) {
                   className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
                 >
                   <option value="">Select a role</option>
-                  <option value="admin">Admin</option>
+                  {isSuperAdminSession ? <option value="admin">Admin</option> : null}
                   <option value="editor">Editor</option>
                 </select>
               </label>
@@ -328,6 +330,7 @@ export default function UsersClient({ initialUserName, initialRole }) {
                   users.map((user) => {
                     const isAdmin = user.role === "admin";
                     const isEditing = editingUser?.id === user.id;
+                    const canManageThisUser = !isAdmin || isSuperAdminSession;
 
                     return (
                       <tr key={user.id} className={isEditing ? "bg-[#eef3fb]" : "border-b border-[#e5e7eb] bg-white"}>
@@ -335,26 +338,30 @@ export default function UsersClient({ initialUserName, initialRole }) {
                         <td className="px-4 py-3 text-slate-700">{user.email}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${roleBadgeClasses(user.role)}`}>
-                            {user.role === "admin" ? "Admin" : "Editor"}
+                            {getAdminRoleBadgeLabel(user.role)}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
+                              disabled={!canManageThisUser}
                               onClick={() => startEditUser(user)}
-                              className="inline-flex items-center gap-1.5 rounded-md bg-[#1d4f9d] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#143f88]"
+                              className={[
+                                "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-white transition",
+                                canManageThisUser ? "bg-[#1d4f9d] hover:bg-[#143f88]" : "cursor-not-allowed bg-[#b8b8b8]",
+                              ].join(" ")}
                             >
                               <Pencil size={14} />
                               Edit
                             </button>
                             <button
                               type="button"
-                              disabled={isAdmin}
+                              disabled={!canManageThisUser}
                               onClick={() => handleRemove(user.id)}
                               className={[
                                 "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-white transition",
-                                isAdmin ? "cursor-not-allowed bg-[#b8b8b8]" : "bg-[#c11212] hover:bg-[#9e0d0d]",
+                                canManageThisUser ? "bg-[#c11212] hover:bg-[#9e0d0d]" : "cursor-not-allowed bg-[#b8b8b8]",
                               ].join(" ")}
                             >
                               <Trash2 size={14} />

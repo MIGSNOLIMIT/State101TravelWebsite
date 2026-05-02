@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { canAccessAdminRoles, isAdminRole, withEffectiveAdminRole } from "@/lib/admin-role";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
@@ -13,12 +14,12 @@ async function getCurrentUser() {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  const user = await prisma.user.findUnique({
+  const user = withEffectiveAdminRole(await prisma.user.findUnique({
     where: { id: session.userId },
     select: { id: true, name: true, email: true, role: true },
-  });
+  }));
 
-  if (!user || !["admin", "editor"].includes(user.role)) {
+  if (!user || !canAccessAdminRoles(user, ["admin", "editor"])) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
@@ -79,7 +80,7 @@ export async function GET(req) {
           updatedAt: null,
           actorName: null,
           actorEmail: null,
-          canEdit: gate.user.role === "admin",
+          canEdit: isAdminRole(gate.user.role),
           history: [],
         });
       }
@@ -91,7 +92,7 @@ export async function GET(req) {
         updatedAt: note.updatedAt,
         actorName: note.actorName,
         actorEmail: note.actorEmail,
-        canEdit: gate.user.role === "admin" && note.actorUserId === gate.user.id,
+        canEdit: isAdminRole(gate.user.role) && note.actorUserId === gate.user.id,
         history: note.history,
       });
     }
@@ -117,7 +118,7 @@ export async function GET(req) {
         updatedAt: note.updatedAt,
         actorName: note.actorName,
         actorEmail: note.actorEmail,
-        canEdit: gate.user.role === "admin" && note.actorUserId === gate.user.id,
+        canEdit: isAdminRole(gate.user.role) && note.actorUserId === gate.user.id,
       }))
     );
   } catch (error) {
@@ -130,7 +131,7 @@ export async function PUT(req) {
   try {
     const gate = await getCurrentUser();
     if (gate.error) return gate.error;
-    if (gate.user.role !== "admin") {
+    if (!isAdminRole(gate.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

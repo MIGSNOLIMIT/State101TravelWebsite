@@ -22,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel, normalizeApplicationStatus } from "@/lib/application-status";
+import { getAdminRoleDisplayText, isAdminRole } from "@/lib/admin-role";
 import BackupArchiveNotice from "./BackupArchiveNotice";
 
 const primaryNav = [
@@ -100,8 +101,8 @@ export default function AdminShell({ children, title, userName, role }) {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const visiblePrimaryNav = primaryNav.filter((item) => !item.adminOnly || role === "admin");
-  const visibleAccountNav = accountNav.filter((item) => !item.adminOnly || role === "admin");
+  const visiblePrimaryNav = primaryNav.filter((item) => !item.adminOnly || isAdminRole(role));
+  const visibleAccountNav = accountNav.filter((item) => !item.adminOnly || isAdminRole(role));
 
   const onLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -126,7 +127,7 @@ export default function AdminShell({ children, title, userName, role }) {
             <UserCircle2 size={58} strokeWidth={1.5} />
           </div>
           <p className="mt-3 truncate text-sm font-semibold md:text-base">{userName || "Admin User"}</p>
-          <p className="text-xs uppercase tracking-[0.2em] text-white/70">{role || "admin"}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/70">{getAdminRoleDisplayText(role)}</p>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3 md:px-3">
@@ -181,7 +182,7 @@ export default function AdminShell({ children, title, userName, role }) {
             </div>
           </section>
 
-          {role === "admin" ? <BackupArchiveNotice /> : null}
+          {isAdminRole(role) ? <BackupArchiveNotice /> : null}
 
           {children}
         </main>

@@ -7,6 +7,7 @@ import { CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, Clock3, FileTex
 import { useEffect, useMemo, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel } from "@/lib/application-status";
+import { isAdminRole } from "@/lib/admin-role";
 import { getApplicationVisaLabel } from "@/lib/application-visa";
 
 const VIEW_OPTIONS = [
@@ -170,7 +171,7 @@ function buildNotesMap(items = []) {
 }
 
 export default function DashboardClient({ initialUserName, initialRole }) {
-  const isAdmin = initialRole === "admin";
+  const isAdmin = isAdminRole(initialRole);
   const [schedules, setSchedules] = useState([]);
   const [calendarNotes, setCalendarNotes] = useState({});
   const [statusCounts, setStatusCounts] = useState({

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 import {
   canTransitionApplicationStatus,
@@ -44,8 +45,10 @@ function buildScheduleConflictPayload(conflict) {
 async function requireRole(reqRoleCheck = (role) => role === "admin") {
   const session = await getAdminSession();
   if (!session) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  const me = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!me || !reqRoleCheck(me.role)) return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  const me = withEffectiveAdminRole(await prisma.user.findUnique({ where: { id: session.userId } }));
+  if (!me || !reqRoleCheck(me.role) || !canAccessAdminRoles(me, ["admin"])) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
   return { me };
 }
 

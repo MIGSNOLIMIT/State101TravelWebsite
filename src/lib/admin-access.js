@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 
 export async function requireAdminRoles(allowedRoles = ["admin", "editor"]) {
 	const session = await getAdminSession();
@@ -12,10 +13,11 @@ export async function requireAdminRoles(allowedRoles = ["admin", "editor"]) {
 		where: { id: session.userId },
 		select: { id: true, name: true, email: true, role: true },
 	});
+	const effectiveUser = withEffectiveAdminRole(user);
 
-	if (!user || !allowedRoles.includes(user.role)) {
+	if (!effectiveUser || !canAccessAdminRoles(effectiveUser, allowedRoles)) {
 		return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
 	}
 
-	return { session, user };
+	return { session, user: effectiveUser };
 }

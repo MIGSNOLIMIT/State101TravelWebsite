@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { canAccessAdminRoles, isAdminRole, withEffectiveAdminRole } from "@/lib/admin-role";
 import { APPLICATION_STATUS_ORDER } from "@/lib/application-status";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +11,8 @@ export async function GET() {
     const session = await getAdminSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const me = await prisma.user.findUnique({ where: { id: session.userId } });
-    if (!me || !["admin", "editor"].includes(me.role)) {
+    const me = withEffectiveAdminRole(await prisma.user.findUnique({ where: { id: session.userId } }));
+    if (!me || !canAccessAdminRoles(me, ["admin", "editor"])) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -81,7 +82,7 @@ export async function GET() {
         updatedAt: note.updatedAt,
         actorName: note.actorName,
         actorEmail: note.actorEmail,
-        canEdit: me.role === "admin" && note.actorUserId === me.id,
+        canEdit: isAdminRole(me.role) && note.actorUserId === me.id,
       })),
     });
   } catch (err) {

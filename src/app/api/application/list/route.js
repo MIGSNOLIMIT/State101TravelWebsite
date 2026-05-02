@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 
 export const dynamic = "force-dynamic";
 
@@ -9,8 +10,8 @@ export async function GET() {
     const session = await getAdminSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const me = await prisma.user.findUnique({ where: { id: session.userId } });
-    if (!me || me.role !== "admin") {
+    const me = withEffectiveAdminRole(await prisma.user.findUnique({ where: { id: session.userId } }));
+    if (!me || !canAccessAdminRoles(me, ["admin"])) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

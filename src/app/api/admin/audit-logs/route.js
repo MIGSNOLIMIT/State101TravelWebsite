@@ -81,10 +81,28 @@ export async function GET(req) {
 		...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
 		...buildSearchWhere(search),
 	};
+	const auditLogSelect = {
+		id: true,
+		category: true,
+		action: true,
+		status: true,
+		summary: true,
+		targetType: true,
+		targetId: true,
+		targetLabel: true,
+		details: true,
+		actorUserId: true,
+		actorName: true,
+		actorEmail: true,
+		actorRole: true,
+		userAgent: true,
+		createdAt: true,
+	};
 
 	const [items, total, totalToday, loginCount, failureCount] = await Promise.all([
 		prisma.auditLog.findMany({
 			where,
+			select: auditLogSelect,
 			orderBy: { createdAt: "desc" },
 			skip,
 			take: pageSize,

@@ -75,8 +75,19 @@ model Homepage {
   heroDesc             String
   heroImages           String[]
   aboutTitle           String?
+  aboutLogoUrl         String?
+  aboutMissionTitle    String?
+  aboutMissionDescription String?
+  aboutVisionTitle     String?
+  aboutVisionDescription String?
   aboutDesc            String?
   servicesTitle        String?
+  canadaServiceEnabled Boolean  @default(true)
+  canadaServiceTitle   String   @default("Canada")
+  canadaServiceDescription String @default("Expert assistance for Express Entry Permanent Residency. We provide start-to-finish support for a successful application and approval. Clear guidance. Proven success.")
+  unitedStatesServiceEnabled Boolean @default(true)
+  unitedStatesServiceTitle String @default("United States")
+  unitedStatesServiceDescription String @default("Get comprehensive, start-to-finish assistance for your visa application. Benefit from thorough assessments and personalized pre-interview briefings. We maximize your chances for success.")
   testimonialsTitle    String?
   testimonialsImages   String[]
   testimonialsVideoUrl String?
@@ -85,6 +96,8 @@ model Homepage {
 
 model Service {
   id          Int      @id @default(autoincrement())
+  slotKey     String?  @unique
+  enabled     Boolean  @default(true)
   title       String
   description String
   iconUrl     String?
@@ -99,6 +112,7 @@ model ServicesPage {
   heroImageUrl String?
   heroTitle    String?
   heroDesc     String?
+  whyChooseEnabled Boolean @default(true)
   sectionTitle String?
   sectionDesc  String?
   requirementsText String?
@@ -110,6 +124,7 @@ model ServicesPage {
 
 model WhyChooseCard {
   id          Int      @id @default(autoincrement())
+  slotKey     String?  @unique
   title       String
   description String
   iconUrl     String?

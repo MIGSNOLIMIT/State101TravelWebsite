@@ -12,26 +12,15 @@ import {
   DEFAULT_APPLICATION_AVAILABLE_DAYS,
   DEFAULT_APPLICATION_TIME_SLOTS,
   DEFAULT_APPLICATION_VISA_TYPES,
-  normalizeApplicationFormSettings,
 } from "@/lib/application-form-settings";
+import { buildServicesPageData } from "@/lib/services-page-defaults";
 
 function buildDefaultPage() {
-  const formSettings = normalizeApplicationFormSettings({
+  return buildServicesPageData({
     applicationAvailableDays: DEFAULT_APPLICATION_AVAILABLE_DAYS,
     applicationVisaTypes: DEFAULT_APPLICATION_VISA_TYPES,
     applicationTimeSlots: DEFAULT_APPLICATION_TIME_SLOTS,
   });
-
-  return {
-    heroImageUrl: "",
-    heroTitle: "",
-    heroDesc: "",
-    sectionTitle: "",
-    sectionDesc: "",
-    requirementsText: "",
-    sections: [],
-    ...formSettings,
-  };
 }
 
 export default function ServicesClient({ initialUserName, initialRole }) {
@@ -54,7 +43,7 @@ export default function ServicesClient({ initialUserName, initialRole }) {
       const res = await fetch("/api/admin/services-page", { cache: "no-store" });
       const json = await res.json();
       if (!ignore) {
-        setPage(json ? { ...json, ...normalizeApplicationFormSettings(json) } : buildDefaultPage());
+        setPage(json ? buildServicesPageData(json, json.sections) : buildDefaultPage());
         setLoading(false);
       }
     }
@@ -159,12 +148,26 @@ export default function ServicesClient({ initialUserName, initialRole }) {
 			return;
 		}
     const heroEmpty = !page?.heroImageUrl && (!page?.heroTitle || !page?.heroDesc);
-    const anySectionEmpty = Array.isArray(page?.sections) && page.sections.some((section) => !section.title?.trim() || !section.description?.trim() || !section.buttonLabel?.trim() || !section.buttonLink?.trim());
+    const anySectionEmpty =
+      Array.isArray(page?.sections) &&
+      page.sections.some((section) => section.enabled && (!section.title?.trim() || !section.description?.trim() || !section.iconUrl?.trim()));
     if (heroEmpty || anySectionEmpty) {
       setConfirmOpen(true);
       return;
     }
     await doSave();
+  };
+
+  const handleSectionImageChange = (index, value) => {
+    if (!value) {
+      handleSectionChange(index, "iconUrl", "");
+      return;
+    }
+    if (Array.isArray(value) || value.match(/\.mp4$/i)) {
+      setMessage("Error: Only image files are allowed in the service section images.");
+      return;
+    }
+    handleSectionChange(index, "iconUrl", value);
   };
 
   if (loading || !page) {
@@ -412,30 +415,68 @@ export default function ServicesClient({ initialUserName, initialRole }) {
           <AdminEditorCard title="Service Sections" contentClassName="px-0 py-0">
             {page.sections.map((section, index) => (
               <div key={section.id || index}>
-                <AdminEditorStrip title={`Service Section ${index + 1}`} className={index === 0 ? "border-t-0" : ""} />
-                <div className="space-y-5 px-5 py-6 md:px-6">
-                  <div>
-                    <AdminEditorLabel>Section Image URL</AdminEditorLabel>
-                    <input type="text" value={section.iconUrl || ""} onChange={(event) => handleSectionChange(index, "iconUrl", event.target.value)} className={adminEditorInputClass} placeholder="Section image URL" />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
+                <AdminEditorStrip title={section.title || `Service Section ${index + 1}`} className={index === 0 ? "border-t-0" : ""} />
+                <div className="px-5 py-6 md:px-6">
+                  <div className="space-y-5 rounded-[22px] border-2 border-[#6d8fc9] bg-[#f7fbff] p-5 shadow-[0_8px_20px_rgba(31,87,164,0.08)] dark:border-[#4f73ab] dark:bg-slate-950/50">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <AdminEditorLabel>Section Visibility</AdminEditorLabel>
+                        <AdminEditorNote className="mt-2">
+                          Turn this section on or off to control its visibility in the Website.
+                        </AdminEditorNote>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(section.enabled)}
+                          onChange={(event) => handleSectionChange(index, "enabled", event.target.checked)}
+                          className="h-4 w-4 accent-[#1f57a4]"
+                        />
+                        Show section
+                      </label>
+                    </div>
+
                     <div>
-                      <AdminEditorLabel>Section Title</AdminEditorLabel>
-                      <input type="text" value={section.title || ""} onChange={(event) => handleSectionChange(index, "title", event.target.value)} className={adminEditorInputClass} placeholder="Section title" />
+                      <AdminEditorLabel>Section Image</AdminEditorLabel>
+                      <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
+                        <MediaLibraryPicker
+                          value={section.iconUrl || ""}
+                          onChange={(value) => handleSectionImageChange(index, value)}
+                          onValidationStateChange={(warning) =>
+                            setMediaWarning(
+                              warning ? `There is an invalid media file in the "${section.title || `Service Section ${index + 1}`}" section. Changes will not be saved.` : ""
+                            )
+                          }
+                          multiple={false}
+                          accept="image/*"
+                          folder="services/sections"
+                        />
+                      </div>
+                      {section.iconUrl ? (
+                        <Image
+                          src={section.iconUrl}
+                          alt={section.title || `Service section ${index + 1}`}
+                          width={180}
+                          height={120}
+                          className="mt-3 rounded-md border border-[#c7d5eb] object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <AdminEditorLabel>Section Title</AdminEditorLabel>
+                        <input type="text" value={section.title || ""} onChange={(event) => handleSectionChange(index, "title", event.target.value)} className={adminEditorInputClass} placeholder="Section title" />
+                      </div>
                     </div>
                     <div>
                       <AdminEditorLabel>Section Description</AdminEditorLabel>
-                      <input type="text" value={section.description || ""} onChange={(event) => handleSectionChange(index, "description", event.target.value)} className={adminEditorInputClass} placeholder="Section description" />
-                    </div>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <AdminEditorLabel>Button Label</AdminEditorLabel>
-                      <input type="text" value={section.buttonLabel || ""} onChange={(event) => handleSectionChange(index, "buttonLabel", event.target.value)} className={adminEditorInputClass} placeholder="Button label" />
-                    </div>
-                    <div>
-                      <AdminEditorLabel>Button Link</AdminEditorLabel>
-                      <input type="text" value={section.buttonLink || ""} onChange={(event) => handleSectionChange(index, "buttonLink", event.target.value)} className={adminEditorInputClass} placeholder="Button link" />
+                      <textarea
+                        rows={6}
+                        value={section.description || ""}
+                        onChange={(event) => handleSectionChange(index, "description", event.target.value)}
+                        className={adminEditorTextareaClass}
+                        placeholder="Section description"
+                      />
                     </div>
                   </div>
                 </div>
@@ -443,6 +484,103 @@ export default function ServicesClient({ initialUserName, initialRole }) {
             ))}
           </AdminEditorCard>
         ) : null}
+
+        <AdminEditorCard title="Why Choose State101 Travel" contentClassName="px-0 py-0">
+          <AdminEditorStrip title="Why Choose Section" className="border-t-0" />
+          <div className="px-5 py-6 md:px-6">
+            <div className="space-y-5 rounded-[22px] border-2 border-[#6d8fc9] bg-[#f7fbff] p-5 shadow-[0_8px_20px_rgba(31,87,164,0.08)] dark:border-[#4f73ab] dark:bg-slate-950/50">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <AdminEditorLabel>Section Visibility</AdminEditorLabel>
+                  <AdminEditorNote className="mt-2">Turn the entire Why Choose section on or off.</AdminEditorNote>
+                </div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(page.whyChooseEnabled)}
+                    onChange={(event) => handleChange("whyChooseEnabled", event.target.checked)}
+                    className="h-4 w-4 accent-[#1f57a4]"
+                  />
+                  Show section
+                </label>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <AdminEditorLabel>Section Title</AdminEditorLabel>
+                  <input
+                    type="text"
+                    value={page.sectionTitle || ""}
+                    onChange={(event) => handleChange("sectionTitle", event.target.value)}
+                    className={adminEditorInputClass}
+                    placeholder="Why choose State101 Travel?"
+                  />
+                </div>
+                <div>
+                  <AdminEditorLabel>Section Description</AdminEditorLabel>
+                  <textarea
+                    rows={4}
+                    value={page.sectionDesc || ""}
+                    onChange={(event) => handleChange("sectionDesc", event.target.value)}
+                    className={adminEditorTextareaClass}
+                    placeholder="Section description"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {page.whyChooseCards?.map((card, index) => (
+            <div key={card.id || card.slotKey || index}>
+              <AdminEditorStrip title={card.title || `Why Choose Card ${index + 1}`} />
+              <div className="px-5 py-6 md:px-6">
+                <div className="space-y-5 rounded-[22px] border-2 border-[#6d8fc9] bg-[#f7fbff] p-5 shadow-[0_8px_20px_rgba(31,87,164,0.08)] dark:border-[#4f73ab] dark:bg-slate-950/50">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <AdminEditorLabel>Card Title</AdminEditorLabel>
+                      <input
+                        type="text"
+                        value={card.title || ""}
+                        onChange={(event) =>
+                          setPage((prev) => ({
+                            ...prev,
+                            whyChooseCards: prev.whyChooseCards.map((item, itemIndex) =>
+                              itemIndex === index ? { ...item, title: event.target.value } : item
+                            ),
+                          }))
+                        }
+                        className={adminEditorInputClass}
+                        placeholder="Card title"
+                      />
+                    </div>
+                    <div>
+                      <AdminEditorLabel>Card Style</AdminEditorLabel>
+                      <input type="text" value={card.color === "bg-red-600" ? "Red card" : "Blue card"} readOnly className={adminEditorInputClass} />
+                      <AdminEditorNote className="mt-2">Card icon and color stay fixed for layout consistency.</AdminEditorNote>
+                    </div>
+                  </div>
+                  <div>
+                    <AdminEditorLabel>Card Description</AdminEditorLabel>
+                    <textarea
+                      rows={5}
+                      value={card.description || ""}
+                      onChange={(event) =>
+                        setPage((prev) => ({
+                          ...prev,
+                          whyChooseCards: prev.whyChooseCards.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, description: event.target.value } : item
+                          ),
+                        }))
+                      }
+                      className={adminEditorTextareaClass}
+                      placeholder="Card description"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </AdminEditorCard>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="min-h-6 text-sm font-medium text-[#1f57a4]">{message}</div>

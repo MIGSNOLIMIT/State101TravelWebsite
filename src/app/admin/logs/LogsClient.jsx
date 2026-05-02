@@ -167,27 +167,20 @@ export default function LogsClient({ initialUserName, initialRole }) {
 										onClick={() => setSelectedItem(item)}
 										className="w-full rounded-[24px] border-2 border-[#d7e2f1] bg-[#fbfcfe] p-5 text-left shadow-[0_10px_20px_rgba(15,23,42,0.05)] transition hover:border-[#9eb8e3]"
 									>
-										<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-											<div className="min-w-0 flex-1">
-												<div className="flex flex-wrap items-center gap-2">
-													<span className={`rounded-full px-3 py-1 text-xs font-semibold tracking-[0.16em] ${item.status === "FAILURE" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
-														{item.status}
-													</span>
-													<span className="rounded-full bg-[#eef3fa] px-3 py-1 text-xs font-semibold text-slate-600">{getAuditLabel(AUDIT_LOG_CATEGORIES, item.category, item.category)}</span>
-													<span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">{getAuditLabel(AUDIT_LOG_ACTION_OPTIONS, item.action, item.action)}</span>
-												</div>
-												<p className="mt-4 text-lg font-semibold text-slate-900">{item.summary}</p>
-												<div className="mt-3 grid gap-3 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-4">
-													<DetailValue label="Actor" value={item.actorName || item.actorEmail || "Unknown user"} />
-													<DetailValue label="Role" value={item.actorRole || "Unknown"} />
-													<DetailValue label="Target" value={item.targetLabel || item.targetType || "-"} />
-													<DetailValue label="Time" value={formatDateTime(item.createdAt)} />
-												</div>
+										<div className="min-w-0">
+											<div className="flex flex-wrap items-center gap-2">
+												<span className={`rounded-full px-3 py-1 text-xs font-semibold tracking-[0.16em] ${item.status === "FAILURE" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+													{item.status}
+												</span>
+												<span className="rounded-full bg-[#eef3fa] px-3 py-1 text-xs font-semibold text-slate-600">{getAuditLabel(AUDIT_LOG_CATEGORIES, item.category, item.category)}</span>
+												<span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">{getAuditLabel(AUDIT_LOG_ACTION_OPTIONS, item.action, item.action)}</span>
 											</div>
-											<div className="xl:w-[220px]">
-												<div className="rounded-[20px] border border-[#d7e2f1] bg-white p-4 text-sm text-slate-600">
-													<DetailValue label="IP Address" value={item.ipAddress || "Not captured"} />
-												</div>
+											<p className="mt-4 text-lg font-semibold text-slate-900">{item.summary}</p>
+											<div className="mt-3 grid gap-3 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-4">
+												<DetailValue label="Actor" value={item.actorName || item.actorEmail || "Unknown user"} />
+												<DetailValue label="Role" value={item.actorRole || "Unknown"} />
+												<DetailValue label="Target" value={item.targetLabel || item.targetType || "-"} />
+												<DetailValue label="Time" value={formatDateTime(item.createdAt)} />
 											</div>
 										</div>
 									</button>
@@ -229,7 +222,6 @@ export default function LogsClient({ initialUserName, initialRole }) {
 								<DetailValue label="Status" value={selectedItem.status} />
 								<DetailValue label="Target Type" value={selectedItem.targetType || "-"} />
 								<DetailValue label="Target Label" value={selectedItem.targetLabel || "-"} />
-								<DetailValue label="IP Address" value={selectedItem.ipAddress || "Not captured"} />
 								<DetailValue label="Timestamp" value={formatDateTime(selectedItem.createdAt)} />
 							</div>
 

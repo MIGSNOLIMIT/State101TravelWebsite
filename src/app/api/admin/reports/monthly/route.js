@@ -36,7 +36,7 @@ function monthBucket(label, month) {
     websiteViews: 0,
     uniqueVisitors: 0,
     applications: 0,
-    approved: 0,
+    scheduled: 0,
     pending: 0,
     inReview: 0,
   };
@@ -97,9 +97,9 @@ export async function GET(req) {
         monthly[createdMonth].inReview += 1;
       }
 
-      if (entry.status === "APPROVED") {
-        const approvedMonth = new Date(entry.updatedAt || entry.createdAt).getMonth();
-        monthly[approvedMonth].approved += 1;
+      if (entry.status === "SCHEDULED") {
+        const scheduledMonth = new Date(entry.updatedAt || entry.createdAt).getMonth();
+        monthly[scheduledMonth].scheduled += 1;
       }
 
       if (entry.status === "PENDING") {
@@ -110,12 +110,12 @@ export async function GET(req) {
 
     monthly.forEach((bucket, index) => {
       bucket.uniqueVisitors = visitorSets[index].size;
-      bucket.approvalRate = bucket.applications ? Math.round((bucket.approved / bucket.applications) * 100) : 0;
+      bucket.scheduledRate = bucket.applications ? Math.round((bucket.scheduled / bucket.applications) * 100) : 0;
     });
 
     const activeMonthIndex = [...monthly]
       .reverse()
-      .findIndex((bucket) => bucket.websiteViews || bucket.applications || bucket.approved || bucket.pending || bucket.inReview);
+      .findIndex((bucket) => bucket.websiteViews || bucket.applications || bucket.scheduled || bucket.pending || bucket.inReview);
     const thisMonth = new Date().getFullYear() === year ? new Date().getMonth() : -1;
     const selectedMonth = thisMonth >= 0
       ? monthly[thisMonth]
@@ -137,7 +137,7 @@ export async function GET(req) {
         websiteViews: monthly.reduce((sum, bucket) => sum + bucket.websiteViews, 0),
         uniqueVisitors: yearlyVisitorSet.size,
         applications: monthly.reduce((sum, bucket) => sum + bucket.applications, 0),
-        approved: monthly.reduce((sum, bucket) => sum + bucket.approved, 0),
+        scheduled: monthly.reduce((sum, bucket) => sum + bucket.scheduled, 0),
         pending: monthly.reduce((sum, bucket) => sum + bucket.pending, 0),
         inReview: monthly.reduce((sum, bucket) => sum + bucket.inReview, 0),
       },
@@ -150,7 +150,7 @@ export async function GET(req) {
       funnel: {
         new: monthly.reduce((sum, bucket) => sum + bucket.applications, 0),
         inReview: monthly.reduce((sum, bucket) => sum + bucket.inReview, 0),
-        approved: monthly.reduce((sum, bucket) => sum + bucket.approved, 0),
+        scheduled: monthly.reduce((sum, bucket) => sum + bucket.scheduled, 0),
         pending: monthly.reduce((sum, bucket) => sum + bucket.pending, 0),
       },
     });

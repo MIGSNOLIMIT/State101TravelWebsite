@@ -2,9 +2,11 @@ import Hero from "./Hero";
 import AboutPreview from "../components/AboutPreview";
 import ServicesPreview from "./ServicesPreview";
 import Testimonials from "./Testimonials";
+import { buildHomepageCmsData, getHomepageServices } from "@/lib/homepage-defaults";
 
 export default function HomePageClient({ cmsData }) {
-  // Static baseline (text + default images)
+  const homepageData = buildHomepageCmsData(cmsData);
+
   const staticHeroData = {
     title: "Trusted Visa Experts since 2017 - Your Path to the U.S. and Canada",
     description: "Expert in Visa Assistance Canada and America Immigration Consultancy Specialist",
@@ -22,45 +24,39 @@ export default function HomePageClient({ cmsData }) {
       "To be the primary and most trusted partner for U.S. and Canada Visa applicants, known for expertise, integrity, and successful results.",
   };
 
-  const staticServicesData = {
-    title: "Our Services",
-    services: [
-      {
-        title: "Canada",
-        description:
-          "Expert assistance for Express Entry Permanent Residency. We provide start-to-finish support for a successful application and approval. Clear guidance. Proven success.",
-        iconUrl: "/images/Canada_Flag_logo.png",
-        link: "/services",
-      },
-      {
-        title: "United States",
-        description:
-          "Get comprehensive, start-to-finish assistance for your visa application. Benefit from thorough assessments and personalized pre-interview briefings. We maximize your chances for success.",
-        iconUrl: "/images/US_Flag_logo.png",
-        link: "/services",
-      },
-    ],
-  };
-
-  // No static fallbacks for testimonials
-
-  // Merge CMS overrides
   const heroData = {
     ...staticHeroData,
-    media: (cmsData?.heroImages?.length ? cmsData.heroImages : staticHeroData.media).map(url => ({ url })),
+    media: (homepageData.heroImages.length ? homepageData.heroImages : staticHeroData.media).map((url) => ({ url })),
+  };
+
+  const aboutData = {
+    ...staticAboutData,
+    heading: homepageData.aboutTitle || staticAboutData.heading,
+    image: {
+      url: homepageData.aboutLogoUrl || staticAboutData.image.url,
+    },
+    missionTitle: homepageData.aboutMissionTitle || staticAboutData.missionTitle,
+    missionDescription: homepageData.aboutMissionDescription || staticAboutData.missionDescription,
+    visionTitle: homepageData.aboutVisionTitle || staticAboutData.visionTitle,
+    visionDescription: homepageData.aboutVisionDescription || staticAboutData.visionDescription,
+  };
+
+  const servicesData = {
+    title: homepageData.servicesTitle,
+    services: getHomepageServices(homepageData),
   };
 
   const testimonialsData = {
-    title: cmsData?.testimonialsTitle || null,
-    images: Array.isArray(cmsData?.testimonialsImages) ? cmsData.testimonialsImages : [],
-    videoUrl: cmsData?.testimonialsVideoUrl || "",
+    title: homepageData.testimonialsTitle || null,
+    images: homepageData.testimonialsImages,
+    videoUrl: homepageData.testimonialsVideoUrl || "",
   };
 
   return (
-    <main className="bg-white" style={{ backgroundColor: 'white' }}>
+    <main className="bg-white" style={{ backgroundColor: "white" }}>
       <Hero heroData={heroData} />
-      <AboutPreview aboutData={staticAboutData} />
-      <ServicesPreview servicesData={staticServicesData} />
+      <AboutPreview aboutData={aboutData} />
+      <ServicesPreview servicesData={servicesData} />
       <Testimonials testimonialsData={testimonialsData} />
     </main>
   );

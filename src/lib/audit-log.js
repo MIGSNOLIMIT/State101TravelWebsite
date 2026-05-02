@@ -1,14 +1,5 @@
 import { prisma } from "@/lib/prisma";
 
-function getClientIp(request) {
-	if (!request?.headers) return null;
-	const forwardedFor = request.headers.get("x-forwarded-for");
-	if (forwardedFor) {
-		return forwardedFor.split(",")[0].trim();
-	}
-	return request.headers.get("x-real-ip") || null;
-}
-
 function normalizeSnapshot(actorSnapshot = {}) {
 	return {
 		actorUserId: actorSnapshot.userId ?? null,
@@ -31,7 +22,6 @@ export async function writeAuditLog(request, event) {
 			targetId: event.targetId ? String(event.targetId) : null,
 			targetLabel: event.targetLabel || null,
 			details: event.details || null,
-			ipAddress: getClientIp(request),
 			userAgent: request?.headers?.get("user-agent") || null,
 		},
 	});

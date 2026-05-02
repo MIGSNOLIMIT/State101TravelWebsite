@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { DEFAULT_HOMEPAGE_DATA } from '../src/lib/homepage-defaults.js';
 
 const prisma = new PrismaClient();
 
@@ -6,16 +7,27 @@ async function main() {
   await prisma.homepage.upsert({
     where: { id: 1 },
     update: {
-      heroTitle: 'Trusted Visa Experts since 2017 - Your Path to the U.S. and Canada',
-      heroDesc: 'Expert in Visa Assistance Canada and America Immigration Consultancy Specialist',
+      heroTitle: DEFAULT_HOMEPAGE_DATA.heroTitle,
+      heroDesc: DEFAULT_HOMEPAGE_DATA.heroDesc,
       heroImages: [
         'https://your-supabase-url/storage/v1/object/public/state101cms/hero1.jpg',
         'https://your-supabase-url/storage/v1/object/public/state101cms/hero2.jpg'
       ],
-      aboutTitle: 'Who we are?',
-      aboutDesc: 'Our Mission: To provide reliable and transparent assistance...\nOur Vision: To be the most trusted partner...',
-      servicesTitle: 'Our Services',
-      testimonialsTitle: 'Our successful clients',
+      aboutTitle: DEFAULT_HOMEPAGE_DATA.aboutTitle,
+      aboutLogoUrl: DEFAULT_HOMEPAGE_DATA.aboutLogoUrl,
+      aboutMissionTitle: DEFAULT_HOMEPAGE_DATA.aboutMissionTitle,
+      aboutMissionDescription: DEFAULT_HOMEPAGE_DATA.aboutMissionDescription,
+      aboutVisionTitle: DEFAULT_HOMEPAGE_DATA.aboutVisionTitle,
+      aboutVisionDescription: DEFAULT_HOMEPAGE_DATA.aboutVisionDescription,
+      aboutDesc: DEFAULT_HOMEPAGE_DATA.aboutDesc,
+      servicesTitle: DEFAULT_HOMEPAGE_DATA.servicesTitle,
+      canadaServiceEnabled: DEFAULT_HOMEPAGE_DATA.canadaServiceEnabled,
+      canadaServiceTitle: DEFAULT_HOMEPAGE_DATA.canadaServiceTitle,
+      canadaServiceDescription: DEFAULT_HOMEPAGE_DATA.canadaServiceDescription,
+      unitedStatesServiceEnabled: DEFAULT_HOMEPAGE_DATA.unitedStatesServiceEnabled,
+      unitedStatesServiceTitle: DEFAULT_HOMEPAGE_DATA.unitedStatesServiceTitle,
+      unitedStatesServiceDescription: DEFAULT_HOMEPAGE_DATA.unitedStatesServiceDescription,
+      testimonialsTitle: DEFAULT_HOMEPAGE_DATA.testimonialsTitle,
       testimonialsImages: [
         'https://your-supabase-url/storage/v1/object/public/state101cms/testimonial1.jpg',
         'https://your-supabase-url/storage/v1/object/public/state101cms/testimonial2.jpg'
@@ -23,16 +35,27 @@ async function main() {
       testimonialsVideoUrl: 'https://your-supabase-url/storage/v1/object/public/state101cms/testimonials.mp4',
     },
     create: {
-      heroTitle: 'Trusted Visa Experts since 2017 - Your Path to the U.S. and Canada',
-      heroDesc: 'Expert in Visa Assistance Canada and America Immigration Consultancy Specialist',
+      heroTitle: DEFAULT_HOMEPAGE_DATA.heroTitle,
+      heroDesc: DEFAULT_HOMEPAGE_DATA.heroDesc,
       heroImages: [
         'https://your-supabase-url/storage/v1/object/public/state101cms/hero1.jpg',
         'https://your-supabase-url/storage/v1/object/public/state101cms/hero2.jpg'
       ],
-      aboutTitle: 'Who we are?',
-      aboutDesc: 'Our Mission: To provide reliable and transparent assistance...\nOur Vision: To be the most trusted partner...',
-      servicesTitle: 'Our Services',
-      testimonialsTitle: 'Our successful clients',
+      aboutTitle: DEFAULT_HOMEPAGE_DATA.aboutTitle,
+      aboutLogoUrl: DEFAULT_HOMEPAGE_DATA.aboutLogoUrl,
+      aboutMissionTitle: DEFAULT_HOMEPAGE_DATA.aboutMissionTitle,
+      aboutMissionDescription: DEFAULT_HOMEPAGE_DATA.aboutMissionDescription,
+      aboutVisionTitle: DEFAULT_HOMEPAGE_DATA.aboutVisionTitle,
+      aboutVisionDescription: DEFAULT_HOMEPAGE_DATA.aboutVisionDescription,
+      aboutDesc: DEFAULT_HOMEPAGE_DATA.aboutDesc,
+      servicesTitle: DEFAULT_HOMEPAGE_DATA.servicesTitle,
+      canadaServiceEnabled: DEFAULT_HOMEPAGE_DATA.canadaServiceEnabled,
+      canadaServiceTitle: DEFAULT_HOMEPAGE_DATA.canadaServiceTitle,
+      canadaServiceDescription: DEFAULT_HOMEPAGE_DATA.canadaServiceDescription,
+      unitedStatesServiceEnabled: DEFAULT_HOMEPAGE_DATA.unitedStatesServiceEnabled,
+      unitedStatesServiceTitle: DEFAULT_HOMEPAGE_DATA.unitedStatesServiceTitle,
+      unitedStatesServiceDescription: DEFAULT_HOMEPAGE_DATA.unitedStatesServiceDescription,
+      testimonialsTitle: DEFAULT_HOMEPAGE_DATA.testimonialsTitle,
       testimonialsImages: [
         'https://your-supabase-url/storage/v1/object/public/state101cms/testimonial1.jpg',
         'https://your-supabase-url/storage/v1/object/public/state101cms/testimonial2.jpg'

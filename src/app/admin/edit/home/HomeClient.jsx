@@ -3,7 +3,14 @@
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
-import { AdminEditorCard, AdminEditorLabel, AdminEditorStrip } from "@/app/admin/components/AdminEditorUi";
+import {
+  AdminEditorCard,
+  AdminEditorLabel,
+  AdminEditorNote,
+  AdminEditorStrip,
+  adminEditorInputClass,
+  adminEditorTextareaClass,
+} from "@/app/admin/components/AdminEditorUi";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 
@@ -40,9 +47,12 @@ export default function HomeClient({ initialUserName, initialRole }) {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
-	const setMediaWarning = (sectionLabel, warning) => {
-		setMediaWarnings((prev) => ({ ...prev, [sectionLabel]: warning ? `There is an invalid media file in the \"${sectionLabel}\" section. Changes will not be saved.` : "" }));
-	};
+  const setMediaWarning = (sectionLabel, warning) => {
+    setMediaWarnings((prev) => ({
+      ...prev,
+      [sectionLabel]: warning ? `There is an invalid media file in the "${sectionLabel}" section. Changes will not be saved.` : "",
+    }));
+  };
 
   const doSave = async () => {
     setPendingSave(true);
@@ -64,13 +74,18 @@ export default function HomeClient({ initialUserName, initialRole }) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
-		const blockingWarnings = Object.values(mediaWarnings).filter(Boolean);
-		if (blockingWarnings.length) {
-			setMessage(blockingWarnings[0]);
-			setSaving(false);
-			return;
-		}
-    const anyEmpty = !Array.isArray(data.heroImages) || data.heroImages.length === 0 || !Array.isArray(data.testimonialsImages) || data.testimonialsImages.length === 0 || !data.testimonialsVideoUrl;
+    const blockingWarnings = Object.values(mediaWarnings).filter(Boolean);
+    if (blockingWarnings.length) {
+      setMessage(blockingWarnings[0]);
+      setSaving(false);
+      return;
+    }
+    const anyEmpty =
+      !Array.isArray(data.heroImages) ||
+      data.heroImages.length === 0 ||
+      !Array.isArray(data.testimonialsImages) ||
+      data.testimonialsImages.length === 0 ||
+      !data.testimonialsVideoUrl;
     if (anyEmpty) {
       setConfirmOpen(true);
       return;
@@ -85,6 +100,18 @@ export default function HomeClient({ initialUserName, initialRole }) {
       return;
     }
     handleChange("heroImages", value);
+  };
+
+  const handleAboutLogoChange = (value) => {
+    if (!value) {
+      handleChange("aboutLogoUrl", "");
+      return;
+    }
+    if (Array.isArray(value) || value.match(/\.mp4$/i)) {
+      setMessage("Error: Only image files are allowed in the Who Are We section.");
+      return;
+    }
+    handleChange("aboutLogoUrl", value);
   };
 
   const handleTestimonialImagesChange = (value) => {
@@ -119,22 +146,211 @@ export default function HomeClient({ initialUserName, initialRole }) {
           <div className="flex h-40 items-center justify-center px-5 py-6 text-sm text-slate-500 md:px-6">Loading homepage data...</div>
         ) : (
           <form onSubmit={handleSave} className="space-y-0">
-            <AdminEditorStrip title="Home Page Images" />
+            <AdminEditorStrip title="Hero Section" />
             <div className="px-5 py-6 md:px-6">
               <div>
                 <AdminEditorLabel>Select Multiple Images</AdminEditorLabel>
                 <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
-                  <MediaLibraryPicker value={data.heroImages} onChange={handleImageChange} onValidationStateChange={(warning) => setMediaWarning("Home Page Images", warning)} multiple={true} accept="image/*" folder="home/hero" />
+                  <MediaLibraryPicker
+                    value={data.heroImages}
+                    onChange={handleImageChange}
+                    onValidationStateChange={(warning) => setMediaWarning("Home Page Images", warning)}
+                    multiple={true}
+                    accept="image/*"
+                    folder="home/hero"
+                  />
                 </div>
               </div>
             </div>
 
-            <AdminEditorStrip title="Our Successful Clients Images" />
+            <AdminEditorStrip title="Who Are We Section" />
+            <div className="space-y-6 px-5 py-6 md:px-6">
+              <div>
+                <AdminEditorLabel>Section Title</AdminEditorLabel>
+                <input
+                  type="text"
+                  value={data.aboutTitle || ""}
+                  onChange={(event) => handleChange("aboutTitle", event.target.value)}
+                  className={adminEditorInputClass}
+                  placeholder="Who Are We?"
+                />
+              </div>
+
+              <div>
+                <AdminEditorLabel>Section Logo</AdminEditorLabel>
+                <AdminEditorNote>Upload the logo shown in the Who Are We section.</AdminEditorNote>
+                <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
+                  <MediaLibraryPicker
+                    value={data.aboutLogoUrl || ""}
+                    onChange={handleAboutLogoChange}
+                    onValidationStateChange={(warning) => setMediaWarning("Who Are We Section", warning)}
+                    multiple={false}
+                    accept="image/*"
+                    folder="home/about"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div className="rounded-[18px] border-2 border-[#9eb8e3] p-5 dark:border-[#5d7fb3]">
+                  <AdminEditorLabel>Mission Title</AdminEditorLabel>
+                  <input
+                    type="text"
+                    value={data.aboutMissionTitle || ""}
+                    onChange={(event) => handleChange("aboutMissionTitle", event.target.value)}
+                    className={adminEditorInputClass}
+                    placeholder="Our Mission"
+                  />
+
+                  <div className="mt-4">
+                    <AdminEditorLabel>Mission Description</AdminEditorLabel>
+                    <textarea
+                      rows={6}
+                      value={data.aboutMissionDescription || ""}
+                      onChange={(event) => handleChange("aboutMissionDescription", event.target.value)}
+                      className={adminEditorTextareaClass}
+                      placeholder="Enter the mission text."
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-[18px] border-2 border-[#9eb8e3] p-5 dark:border-[#5d7fb3]">
+                  <AdminEditorLabel>Vision Title</AdminEditorLabel>
+                  <input
+                    type="text"
+                    value={data.aboutVisionTitle || ""}
+                    onChange={(event) => handleChange("aboutVisionTitle", event.target.value)}
+                    className={adminEditorInputClass}
+                    placeholder="Our Vision"
+                  />
+
+                  <div className="mt-4">
+                    <AdminEditorLabel>Vision Description</AdminEditorLabel>
+                    <textarea
+                      rows={6}
+                      value={data.aboutVisionDescription || ""}
+                      onChange={(event) => handleChange("aboutVisionDescription", event.target.value)}
+                      className={adminEditorTextareaClass}
+                      placeholder="Enter the vision text."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <AdminEditorStrip title="Homepage Services Section" />
+            <div className="space-y-6 px-5 py-6 md:px-6">
+              <div>
+                <AdminEditorLabel>Section Title</AdminEditorLabel>
+                <input
+                  type="text"
+                  value={data.servicesTitle || ""}
+                  onChange={(event) => handleChange("servicesTitle", event.target.value)}
+                  className={adminEditorInputClass}
+                  placeholder="Our Services"
+                />
+              </div>
+
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div className="rounded-[18px] border-2 border-[#9eb8e3] p-5 dark:border-[#5d7fb3]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <AdminEditorLabel className="mb-2">Canada Card</AdminEditorLabel>
+                      <AdminEditorNote>Fixed homepage slot for Canada. Turn it off to hide the card.</AdminEditorNote>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(data.canadaServiceEnabled)}
+                        onChange={(event) => handleChange("canadaServiceEnabled", event.target.checked)}
+                        className="h-4 w-4 accent-[#1f57a4]"
+                      />
+                      Show card
+                    </label>
+                  </div>
+
+                  <div className="mt-5 space-y-4">
+                    <div>
+                      <AdminEditorLabel>Title</AdminEditorLabel>
+                      <input
+                        type="text"
+                        value={data.canadaServiceTitle || ""}
+                        onChange={(event) => handleChange("canadaServiceTitle", event.target.value)}
+                        className={adminEditorInputClass}
+                        placeholder="Canada"
+                      />
+                    </div>
+                    <div>
+                      <AdminEditorLabel>Description</AdminEditorLabel>
+                      <AdminEditorNote>Use line breaks if you want the front end to show multiple lines.</AdminEditorNote>
+                      <textarea
+                        rows={6}
+                        value={data.canadaServiceDescription || ""}
+                        onChange={(event) => handleChange("canadaServiceDescription", event.target.value)}
+                        className={adminEditorTextareaClass}
+                        placeholder="Describe the Canada service offering."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[18px] border-2 border-[#9eb8e3] p-5 dark:border-[#5d7fb3]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <AdminEditorLabel className="mb-2">United States Card</AdminEditorLabel>
+                      <AdminEditorNote>Fixed homepage slot for the U.S. Turn it off to hide the card.</AdminEditorNote>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(data.unitedStatesServiceEnabled)}
+                        onChange={(event) => handleChange("unitedStatesServiceEnabled", event.target.checked)}
+                        className="h-4 w-4 accent-[#1f57a4]"
+                      />
+                      Show card
+                    </label>
+                  </div>
+
+                  <div className="mt-5 space-y-4">
+                    <div>
+                      <AdminEditorLabel>Title</AdminEditorLabel>
+                      <input
+                        type="text"
+                        value={data.unitedStatesServiceTitle || ""}
+                        onChange={(event) => handleChange("unitedStatesServiceTitle", event.target.value)}
+                        className={adminEditorInputClass}
+                        placeholder="United States"
+                      />
+                    </div>
+                    <div>
+                      <AdminEditorLabel>Description</AdminEditorLabel>
+                      <AdminEditorNote>Use line breaks if you want the front end to show multiple lines.</AdminEditorNote>
+                      <textarea
+                        rows={6}
+                        value={data.unitedStatesServiceDescription || ""}
+                        onChange={(event) => handleChange("unitedStatesServiceDescription", event.target.value)}
+                        className={adminEditorTextareaClass}
+                        placeholder="Describe the United States service offering."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <AdminEditorStrip title="Our Successful Clients Section" />
             <div className="px-5 py-6 md:px-6">
               <div>
                 <AdminEditorLabel>Select Multiple Images</AdminEditorLabel>
                 <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
-                  <MediaLibraryPicker value={data.testimonialsImages} onChange={handleTestimonialImagesChange} onValidationStateChange={(warning) => setMediaWarning("Our Successful Clients Images", warning)} multiple={true} accept="image/*" folder="home/testimonials" />
+                  <MediaLibraryPicker
+                    value={data.testimonialsImages}
+                    onChange={handleTestimonialImagesChange}
+                    onValidationStateChange={(warning) => setMediaWarning("Our Successful Clients Images", warning)}
+                    multiple={true}
+                    accept="image/*"
+                    folder="home/testimonials"
+                  />
                 </div>
               </div>
             </div>
@@ -144,7 +360,14 @@ export default function HomeClient({ initialUserName, initialRole }) {
               <div>
                 <AdminEditorLabel>Select a Video</AdminEditorLabel>
                 <div className="mt-3 rounded-[18px] border-2 border-[#9eb8e3] p-3 dark:border-[#5d7fb3]">
-                  <MediaLibraryPicker value={data.testimonialsVideoUrl} onChange={handleVideoChange} onValidationStateChange={(warning) => setMediaWarning("Select a Video", warning)} multiple={false} accept="video/*" folder="home/testimonials-video" />
+                  <MediaLibraryPicker
+                    value={data.testimonialsVideoUrl}
+                    onChange={handleVideoChange}
+                    onValidationStateChange={(warning) => setMediaWarning("Select a Video", warning)}
+                    multiple={false}
+                    accept="video/*"
+                    folder="home/testimonials-video"
+                  />
                 </div>
               </div>
 

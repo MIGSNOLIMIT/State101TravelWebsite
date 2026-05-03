@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import { APPLICATION_STATUS_ORDER, getApplicationStatusLabel, normalizeApplicationStatus } from "@/lib/application-status";
 import { getAdminRoleDisplayText, isAdminRole } from "@/lib/admin-role";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import BackupArchiveNotice from "./BackupArchiveNotice";
 
 const primaryNav = [
@@ -100,6 +102,7 @@ export default function AdminShell({ children, title, userName, role }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const visiblePrimaryNav = primaryNav.filter((item) => !item.adminOnly || isAdminRole(role));
   const visibleAccountNav = accountNav.filter((item) => !item.adminOnly || isAdminRole(role));
@@ -162,7 +165,7 @@ export default function AdminShell({ children, title, userName, role }) {
               ))}
               <button
                 type="button"
-                onClick={onLogout}
+                onClick={() => setLogoutConfirmOpen(true)}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium text-white/86 transition hover:bg-white/10 hover:text-white"
               >
                 <LogOut size={18} strokeWidth={2.1} />
@@ -187,6 +190,20 @@ export default function AdminShell({ children, title, userName, role }) {
           {children}
         </main>
       </div>
+
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        title="Confirm Logout"
+        message="Are you sure you want to log out?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        confirmTone="danger"
+        onCancel={() => setLogoutConfirmOpen(false)}
+        onConfirm={async () => {
+          setLogoutConfirmOpen(false);
+          await onLogout();
+        }}
+      />
     </div>
   );
 }

@@ -6,32 +6,43 @@ export default function ConfirmDialog({
   message = "Are you sure?",
   confirmText = "Save anyway",
   cancelText = "Cancel",
+  confirmTone = "primary",
   onConfirm,
   onCancel,
 }) {
   if (!open) return null;
+
+  const confirmButtonClassName =
+    confirmTone === "danger"
+      ? "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600"
+      : "bg-[#164896] text-white hover:bg-[#103773] focus-visible:outline-[#164896]";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-slate-950/60"
         aria-hidden="true"
         onClick={onCancel}
       />
-      <div className="relative bg-white rounded-xl shadow-xl w-[90%] max-w-md p-6 z-10">
-        <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
-        <p className="text-gray-700 mb-6">{message}</p>
-        <div className="flex justify-end gap-3">
+      <div className="relative z-10 w-full max-w-lg rounded-[28px] border border-[#d9e3f1] bg-white p-6 shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#164896]">Confirmation</p>
+        <h3 className="mt-2 text-2xl font-semibold text-slate-900">{title}</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-500">{message}</p>
+        <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             {cancelText}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="px-4 py-2 rounded bg-gradient-to-r from-blue-600 to-red-600 text-white font-semibold hover:from-blue-700 hover:to-red-700"
+            className={[
+              "rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+              confirmButtonClassName,
+            ].join(" ")}
           >
             {confirmText}
           </button>

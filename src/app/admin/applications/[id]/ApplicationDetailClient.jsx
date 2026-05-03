@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, ArrowLeft, Download, RotateCcw } from "lucide-react";
 import AdminShell from "@/app/admin/components/AdminShell";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { getApplicationStatusLabel } from "@/lib/application-status";
 import { archiveApplication, restoreApplication } from "@/lib/application";
 import { getApplicationVisaLabel } from "@/lib/application-visa";
@@ -37,6 +38,7 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
   const [item, setItem] = useState(null);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
+  const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,7 +62,6 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
   }, [id, load]);
 
   const onArchiveEntry = async () => {
-    if (!confirm("Archive this application? You can restore it later from the archive section.")) return;
     try {
       const result = await archiveApplication(id);
       setItem((prev) => ({ ...prev, archivedAt: result?.item?.archivedAt || new Date().toISOString() }));
@@ -131,16 +132,16 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
                   <RotateCcw size={16} />
                   Restore Application
                 </button>
-              ) : (
+              ) : item.status !== "IN_REVIEW" && item.status !== "APPROVED" ? (
                 <button
                   type="button"
-                  onClick={onArchiveEntry}
+                  onClick={() => setArchiveConfirmOpen(true)}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
                   <Archive size={16} />
                   Archive Application
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -273,6 +274,20 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
           </section>
         </div>
       )}
+
+      <ConfirmDialog
+        open={archiveConfirmOpen}
+        title="Confirm Archive"
+        message={`Archive ${item?.fullName || "this application"}? You can restore it later from the archive section.`}
+        confirmText="Archive"
+        cancelText="Cancel"
+        confirmTone="danger"
+        onCancel={() => setArchiveConfirmOpen(false)}
+        onConfirm={async () => {
+          setArchiveConfirmOpen(false);
+          await onArchiveEntry();
+        }}
+      />
     </AdminShell>
   );
 }

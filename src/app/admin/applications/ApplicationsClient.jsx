@@ -4,6 +4,7 @@ import { Archive, CalendarClock, CheckCircle2, Clock3, Download, Files, Loader2,
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { archiveApplication, restoreApplication } from "@/lib/application";
 import {
   APPLICATION_ADDRESS_INITIAL_VALUES,
@@ -141,6 +142,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   const [activeSection, setActiveSection] = useState(() => (searchParams.get("view") === "archived" ? "archived" : "active"));
   const [backupLoading, setBackupLoading] = useState(false);
   const [statusDialog, setStatusDialog] = useState(null);
+  const [archiveDialog, setArchiveDialog] = useState(null);
   const [activeStatus, setActiveStatus] = useState(() => {
     const value = normalizeApplicationStatus(searchParams.get("status"));
     return isApplicationStatus(value) ? value : "NEW";
@@ -274,7 +276,6 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   };
 
   const onArchive = async (id) => {
-    if (!confirm("Archive this application? You can restore it later from the archive section.")) return;
     try {
       const result = await archiveApplication(id);
       const archivedAt = result?.item?.archivedAt || new Date().toISOString();
@@ -1041,15 +1042,17 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                               >
                                 Download ZIP
                               </a>
-                              <button
-                                type="button"
-                                onClick={() => onArchive(item.id)}
-                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-200 dark:hover:bg-slate-800"
-                                title="Archive application"
-                              >
-                                <Archive size={16} />
-                                Archive
-                              </button>
+                              {normalizedItemStatus !== "IN_REVIEW" && normalizedItemStatus !== "APPROVED" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setArchiveDialog({ id: item.id, fullName: item.fullName })}
+                                  className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-[#4d6f9f] dark:text-slate-200 dark:hover:bg-slate-800"
+                                  title="Archive application"
+                                >
+                                  <Archive size={16} />
+                                  Archive
+                                </button>
+                              ) : null}
                             </div>
 
                             <div className="mt-4 border-t-2 border-[#d7e2f1] pt-4 dark:border-[#415e89]">
@@ -1209,6 +1212,26 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={Boolean(archiveDialog)}
+        title="Confirm Archive"
+        message={
+          archiveDialog
+            ? `Archive ${archiveDialog.fullName}? You can restore this application later from the archive section.`
+            : "Archive this application?"
+        }
+        confirmText="Archive"
+        cancelText="Cancel"
+        confirmTone="danger"
+        onCancel={() => setArchiveDialog(null)}
+        onConfirm={async () => {
+          const pendingArchive = archiveDialog;
+          if (!pendingArchive) return;
+          setArchiveDialog(null);
+          await onArchive(pendingArchive.id);
+        }}
+      />
     </AdminShell>
   );
 }

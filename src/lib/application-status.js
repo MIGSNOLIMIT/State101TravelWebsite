@@ -23,7 +23,6 @@ export const APPLICATION_STATUS_ACTIONS = {
   ],
   IN_REVIEW: [
     { status: "APPROVED", label: "Approve", tone: "approved" },
-    { status: "PENDING", label: "Move to Pending", tone: "pending" },
   ],
   APPROVED: [
     { status: "SCHEDULED", label: "Move to Schedule", tone: "scheduled" },

@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, ArrowLeft, Download, RotateCcw } from "lucide-react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { formatBirthdate } from "@/lib/application-age";
 import { getApplicationStatusLabel } from "@/lib/application-status";
 import { archiveApplication, restoreApplication } from "@/lib/application";
 import { getApplicationVisaLabel } from "@/lib/application-visa";
@@ -174,7 +176,8 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
                 <DetailField label="Phone Number" value={item.phone} />
                 <DetailField label="Address" value={item.address} />
                 <DetailField label="Visa Type" value={getApplicationVisaLabel(item.visaType)} />
-                <DetailField label="Age" value={item.age ? String(item.age) : "-"} />
+                <DetailField label="Age" value={item.age === 0 || item.age ? String(item.age) : "-"} />
+                <DetailField label="Birthdate" value={item.birthdate ? formatBirthdate(item.birthdate) : "-"} />
                 <DetailField label="Available Day" value={item.availableDay} />
                 <DetailField label="Available Time" value={item.availableTime} />
                 <DetailField label="Scheduled At" value={item.scheduledAt ? formatDate(item.scheduledAt) : "Not scheduled"} />
@@ -240,7 +243,9 @@ export default function ApplicationDetailClient({ initialUserName, initialRole }
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         {file.fileType?.startsWith("image/") ? (
-                          <img src={file.fileUrl} alt="Applicant file preview" className="h-14 w-14 rounded-xl object-cover" />
+                          <div className="relative h-14 w-14 overflow-hidden rounded-xl">
+                            <Image src={file.fileUrl} alt="Applicant file preview" fill className="object-cover" sizes="56px" />
+                          </div>
                         ) : (
                           <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-xs font-semibold text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300">
                             DOC

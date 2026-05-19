@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
+import { withComputedApplicationAge } from "@/lib/application-age";
 import {
   canTransitionApplicationStatus,
   getAllowedApplicationStatusTransitions,
@@ -67,7 +68,7 @@ export async function GET(_req, { params }) {
       },
     });
     if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(entry);
+    return NextResponse.json(withComputedApplicationAge(entry));
   } catch (e) {
     console.error("application get error", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

@@ -4,6 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import {
+  PASSWORD_HELPER_TEXT,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_PATTERN,
+  validatePassword,
+} from "@/lib/account-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +33,9 @@ export default function ResetPassword() {
       setMessage("Invalid or missing token.");
       return;
     }
-    if (!password || password.length < 6) {
-      setMessage("Password must be at least 6 characters.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setMessage(passwordError);
       return;
     }
     if (password !== confirm) {
@@ -90,6 +98,9 @@ export default function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-md border border-white/80 bg-white px-4 py-3 pr-12 text-sm text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/60"
                 placeholder="Enter new password"
+                minLength={PASSWORD_MIN_LENGTH}
+                maxLength={PASSWORD_MAX_LENGTH}
+                pattern={PASSWORD_PATTERN}
               />
               <button
                 type="button"
@@ -101,6 +112,7 @@ export default function ResetPassword() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <p className="mt-2 text-xs text-white/80">{PASSWORD_HELPER_TEXT}</p>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-white">
@@ -114,6 +126,9 @@ export default function ResetPassword() {
                 onChange={(e) => setConfirm(e.target.value)}
                 className="w-full rounded-md border border-white/80 bg-white px-4 py-3 pr-12 text-sm text-slate-900 outline-none transition focus:border-white focus:ring-2 focus:ring-white/60"
                 placeholder="Confirm new password"
+                minLength={PASSWORD_MIN_LENGTH}
+                maxLength={PASSWORD_MAX_LENGTH}
+                pattern={PASSWORD_PATTERN}
               />
               <button
                 type="button"

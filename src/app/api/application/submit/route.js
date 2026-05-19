@@ -24,7 +24,7 @@ export async function POST(req) {
       phone: "",
       address: "",
       visaType: "",
-      age: 0,
+      birthdate: "",
       availableTime: "",
       availableDay: "",
     };
@@ -38,7 +38,7 @@ export async function POST(req) {
         phone: String(json.phone || "").trim(),
         address: String(json.address || "").trim(),
         visaType: String(json.visaType || "").trim(),
-        age: Number.parseInt(json.age, 10) || 0,
+        birthdate: String(json.birthdate || "").trim(),
         availableTime: String(json.availableTime || "").trim(),
         availableDay: String(json.availableDay || "").trim(),
       };
@@ -54,7 +54,7 @@ export async function POST(req) {
           phone: String(json.phone || "").trim(),
           address: String(json.address || "").trim(),
           visaType: String(json.visaType || "").trim(),
-          age: Number.parseInt(json.age, 10) || 0,
+          birthdate: String(json.birthdate || "").trim(),
           availableTime: String(json.availableTime || "").trim(),
           availableDay: String(json.availableDay || "").trim(),
         };
@@ -65,7 +65,7 @@ export async function POST(req) {
           phone: String(form.get("phone") || "").trim(),
           address: String(form.get("address") || "").trim(),
           visaType: String(form.get("visaType") || "").trim(),
-          age: Number.parseInt(String(form.get("age") || "0"), 10) || 0,
+          birthdate: String(form.get("birthdate") || "").trim(),
           availableTime: String(form.get("availableTime") || "").trim(),
           availableDay: String(form.get("availableDay") || "").trim(),
         };

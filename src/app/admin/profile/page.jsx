@@ -15,7 +15,7 @@ export default async function ProfilePage() {
 
   const user = withEffectiveAdminRole(await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { name: true, email: true, role: true },
+    select: { name: true, email: true, role: true, profileImageUrl: true },
   }));
 
   if (!user || !canAccessAdminRoles(user, ["admin", "editor"])) {

@@ -4,6 +4,7 @@ import { Archive, CalendarClock, CheckCircle2, Clock3, Download, Files, Loader2,
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminShell from "@/app/admin/components/AdminShell";
+import PrivacyAgreement from "@/components/PrivacyAgreement";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { archiveApplication, restoreApplication } from "@/lib/application";
 import {
@@ -23,6 +24,7 @@ import {
   DEFAULT_APPLICATION_VISA_TYPES,
   normalizeApplicationFormSettings,
 } from "@/lib/application-form-settings";
+import { getTodayInputDate } from "@/lib/application-age";
 import { getApplicationVisaLabel, toApplicationVisaOptions } from "@/lib/application-visa";
 import {
   APPLICATION_STATUS_ACTIONS,
@@ -116,7 +118,7 @@ const INITIAL_WALK_IN_FORM = {
   phone: "",
   ...APPLICATION_ADDRESS_INITIAL_VALUES,
   visaType: "",
-  age: "",
+  birthdate: "",
   availableTime: "",
   availableDay: "",
 };
@@ -132,6 +134,8 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   const [walkInSubmitting, setWalkInSubmitting] = useState(false);
   const [walkInForm, setWalkInForm] = useState(INITIAL_WALK_IN_FORM);
   const [walkInFiles, setWalkInFiles] = useState([]);
+  const [walkInPrivacyAccepted, setWalkInPrivacyAccepted] = useState(false);
+  const [walkInPrivacyResetKey, setWalkInPrivacyResetKey] = useState(0);
   const [formSettings, setFormSettings] = useState(() =>
     normalizeApplicationFormSettings({
       applicationAvailableDays: DEFAULT_APPLICATION_AVAILABLE_DAYS,
@@ -154,6 +158,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
   const walkInCityOptions = getCitiesForProvince(walkInForm.province);
   const walkInAddress = buildApplicationAddress(walkInForm);
   const visaTypeOptions = useMemo(() => toApplicationVisaOptions(formSettings.visaTypes), [formSettings.visaTypes]);
+  const maxBirthdate = getTodayInputDate();
 
   useEffect(() => {
     let ignore = false;
@@ -330,6 +335,12 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
 
   const onCreateWalkIn = async (event) => {
     event.preventDefault();
+    if (!walkInPrivacyAccepted) {
+      setMsg("Please scroll through the Privacy Agreement and select I Agree before saving.");
+      setMsgTone("error");
+      return;
+    }
+
     setWalkInSubmitting(true);
     setMsg("");
 
@@ -340,7 +351,7 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
       formData.set("phone", walkInForm.phone);
       formData.set("address", walkInAddress);
       formData.set("visaType", walkInForm.visaType);
-      formData.set("age", walkInForm.age);
+      formData.set("birthdate", walkInForm.birthdate);
       formData.set("availableTime", walkInForm.availableTime);
       formData.set("availableDay", walkInForm.availableDay);
       for (const file of walkInFiles) {
@@ -362,6 +373,8 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
       setItems((prev) => [json, ...prev]);
       setWalkInForm(INITIAL_WALK_IN_FORM);
       setWalkInFiles([]);
+      setWalkInPrivacyAccepted(false);
+      setWalkInPrivacyResetKey((prev) => prev + 1);
       if (walkInFileInputRef.current) {
         walkInFileInputRef.current.value = "";
       }
@@ -758,13 +771,13 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Age *
+                    Birthdate *
                     <input
-                      type="number"
-                      min="1"
+                      type="date"
+                      max={maxBirthdate}
                       required
-                      value={walkInForm.age}
-                      onChange={(event) => onWalkInFieldChange("age", event.target.value)}
+                      value={walkInForm.birthdate}
+                      onChange={(event) => onWalkInFieldChange("birthdate", event.target.value)}
                       className="mt-1 w-full rounded-xl border-2 border-[#b2c6e6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#164896] dark:border-[#4d6f9f] dark:bg-slate-900"
                     />
                   </label>
@@ -816,10 +829,16 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                   </label>
                 </div>
 
+                <PrivacyAgreement
+                  checked={walkInPrivacyAccepted}
+                  onCheckedChange={setWalkInPrivacyAccepted}
+                  resetKey={walkInPrivacyResetKey}
+                />
+
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="submit"
-                    disabled={walkInSubmitting}
+                    disabled={walkInSubmitting || !walkInPrivacyAccepted}
                     className="inline-flex items-center gap-2 rounded-xl bg-[#164896] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#103773] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Plus size={16} />
@@ -829,6 +848,12 @@ export default function ApplicationsClient({ initialUserName, initialRole }) {
                     type="button"
                     onClick={() => {
                       setWalkInForm(INITIAL_WALK_IN_FORM);
+                      setWalkInFiles([]);
+                      setWalkInPrivacyAccepted(false);
+                      setWalkInPrivacyResetKey((prev) => prev + 1);
+                      if (walkInFileInputRef.current) {
+                        walkInFileInputRef.current.value = "";
+                      }
                       setWalkInOpen(false);
                     }}
                     className="rounded-xl border border-[#cbd5e1] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"

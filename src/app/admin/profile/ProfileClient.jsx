@@ -3,7 +3,20 @@
 import { Eye, EyeOff, Save } from "lucide-react";
 import { useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
+import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import { isAdminRole, isSuperAdminEmail } from "@/lib/admin-role";
+import {
+  PASSWORD_HELPER_TEXT,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_PATTERN,
+  USERNAME_HELPER_TEXT,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  USERNAME_PATTERN,
+  validatePassword,
+  validateUsername,
+} from "@/lib/account-validation";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
 function PasswordField({ label, value, onChange, placeholder, visible, onToggle }) {
@@ -17,6 +30,9 @@ function PasswordField({ label, value, onChange, placeholder, visible, onToggle 
           onChange={onChange}
           className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 pr-12 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
           placeholder={placeholder}
+          minLength={label === "Current Password" ? undefined : PASSWORD_MIN_LENGTH}
+          maxLength={label === "Current Password" ? undefined : PASSWORD_MAX_LENGTH}
+          pattern={label === "Current Password" ? undefined : PASSWORD_PATTERN}
         />
         <button
           type="button"
@@ -34,6 +50,7 @@ function PasswordField({ label, value, onChange, placeholder, visible, onToggle 
 export default function ProfileClient({ initialProfile }) {
   const [name, setName] = useState(initialProfile.name || "");
   const [email, setEmail] = useState(initialProfile.email || "");
+  const [profileImageUrl, setProfileImageUrl] = useState(initialProfile.profileImageUrl || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -53,10 +70,26 @@ export default function ProfileClient({ initialProfile }) {
     setMessage("");
     setError("");
 
+    const usernameError = validateUsername(name);
+    if (usernameError) {
+      setError(usernameError);
+      setLoading(false);
+      return;
+    }
+
     if (newPassword && newPassword !== confirmPassword) {
       setError("New passwords don't match");
       setLoading(false);
       return;
+    }
+
+    if (newPassword) {
+      const passwordError = validatePassword(newPassword);
+      if (passwordError) {
+        setError(passwordError);
+        setLoading(false);
+        return;
+      }
     }
 
     if (canEditEmail) {
@@ -70,9 +103,10 @@ export default function ProfileClient({ initialProfile }) {
 
     try {
       const payload = {
-        name,
+        name: name.trim(),
         password: newPassword || undefined,
         currentPassword: currentPassword || undefined,
+        profileImageUrl: profileImageUrl || null,
       };
 
       if (canEditEmail) {
@@ -92,6 +126,14 @@ export default function ProfileClient({ initialProfile }) {
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
+        window.dispatchEvent(
+          new CustomEvent("admin-profile-updated", {
+            detail: {
+              name: name.trim(),
+              profileImageUrl: profileImageUrl || "",
+            },
+          })
+        );
       } else {
         setError(data.error || "Update failed");
       }
@@ -115,13 +157,18 @@ export default function ProfileClient({ initialProfile }) {
 
           <div className="grid gap-5 px-6 py-6 md:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Name</span>
+              <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Username</span>
               <input
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
+                minLength={USERNAME_MIN_LENGTH}
+                maxLength={USERNAME_MAX_LENGTH}
+                pattern={USERNAME_PATTERN}
+                required
               />
+              <p className="mt-2 text-xs text-slate-500">{USERNAME_HELPER_TEXT}</p>
             </label>
 
             <label className="block">
@@ -139,11 +186,28 @@ export default function ProfileClient({ initialProfile }) {
             </label>
           </div>
 
+          <div className="border-t border-[#dde5ef] bg-[#f3f5f8] px-6 py-3 text-center text-sm font-semibold text-slate-700">
+            Profile Photo
+          </div>
+
+          <div className="px-6 py-6">
+            <p className="mb-4 text-sm text-slate-500">
+              Add an optional account profile photo. You can upload a new image or pick one from the media library.
+            </p>
+            <MediaLibraryPicker
+              value={profileImageUrl}
+              onChange={setProfileImageUrl}
+              accept="image/*"
+              folder="profile"
+            />
+          </div>
+
           <div className="border-y border-[#dde5ef] bg-[#f3f5f8] px-6 py-3 text-center text-sm font-semibold text-slate-700">
             Change Password
           </div>
 
           <div className="space-y-5 px-6 py-6">
+            <p className="text-sm text-slate-500">{PASSWORD_HELPER_TEXT}</p>
             <PasswordField
               label="Current Password"
               value={currentPassword}
@@ -161,6 +225,7 @@ export default function ProfileClient({ initialProfile }) {
               visible={showNewPassword}
               onToggle={() => setShowNewPassword((prev) => !prev)}
             />
+            <p className="-mt-3 text-xs text-slate-500">{PASSWORD_HELPER_TEXT}</p>
 
             <PasswordField
               label="Confirm New Password"

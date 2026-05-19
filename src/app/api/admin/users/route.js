@@ -11,6 +11,8 @@ import {
 } from "@/lib/admin-role";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
+import { generateRandomPassword, validatePassword, validateUsername } from "@/lib/account-validation";
+import bcrypt from "bcryptjs";
 
 // Only admins can access user management
 export async function GET() {
@@ -92,7 +94,13 @@ export async function PATCH(req) {
   }
   const body = await req.json();
   const updateData = {};
-  if (body.name !== undefined) updateData.name = body.name;
+  if (body.name !== undefined) {
+    const usernameError = validateUsername(body.name);
+    if (usernameError) {
+      return NextResponse.json({ error: usernameError }, { status: 400 });
+    }
+    updateData.name = String(body.name).trim();
+  }
   // Allow email update with uniqueness check
   if (body.email !== undefined) {
     const email = String(body.email).trim().toLowerCase();
@@ -161,12 +169,21 @@ export async function POST(req) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const { name, email, password, role } = await req.json();
-  if (!email || !password) {
+  if (!email || !name) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  const usernameError = validateUsername(name);
+  if (usernameError) {
+    return NextResponse.json({ error: usernameError }, { status: 400 });
   }
   const emailError = validateApplicationStyleEmail(email);
   if (emailError) {
     return NextResponse.json({ error: emailError }, { status: 400 });
+  }
+  const resolvedPassword = password || generateRandomPassword();
+  const passwordError = validatePassword(resolvedPassword);
+  if (passwordError) {
+    return NextResponse.json({ error: passwordError }, { status: 400 });
   }
   const normalizedEmail = String(email).trim().toLowerCase();
   if (isSuperAdminEmail(normalizedEmail)) {
@@ -180,10 +197,9 @@ export async function POST(req) {
   if (nextRole === "admin" && !canManageAdminUsers(user)) {
     return NextResponse.json({ error: "Only the super admin can create admin accounts" }, { status: 403 });
   }
-  const bcrypt = require("bcryptjs");
-  const hashed = await bcrypt.hash(password, 10);
+  const hashed = await bcrypt.hash(resolvedPassword, 10);
   const created = await prisma.user.create({
-    data: { name, email: normalizedEmail, password: hashed, role: nextRole },
+    data: { name: String(name).trim(), email: normalizedEmail, password: hashed, role: nextRole },
   });
   await safeWriteAuditLog(req, {
     category: "users",

@@ -39,7 +39,7 @@ export async function POST(req) {
 				phone: String(form.get("phone") || "").trim(),
 				address: String(form.get("address") || "").trim(),
 				visaType: String(form.get("visaType") || "").trim(),
-				age: Number.parseInt(String(form.get("age") || "0"), 10) || 0,
+				birthdate: String(form.get("birthdate") || "").trim(),
 				availableTime: String(form.get("availableTime") || "").trim(),
 				availableDay: String(form.get("availableDay") || "").trim(),
 			};

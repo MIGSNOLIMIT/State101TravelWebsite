@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PrivacyAgreement from "@/components/PrivacyAgreement";
 import {
   APPLICATION_FILE_ACCEPT,
   APPLICATION_FILE_NOTE,
@@ -19,6 +20,7 @@ import {
   DEFAULT_APPLICATION_VISA_TYPES,
   normalizeApplicationFormSettings,
 } from "@/lib/application-form-settings";
+import { getTodayInputDate } from "@/lib/application-age";
 import { toApplicationVisaOptions } from "@/lib/application-visa";
 
 export default function ApplicationFormEmbed() {
@@ -29,6 +31,8 @@ export default function ApplicationFormEmbed() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [privacyResetKey, setPrivacyResetKey] = useState(0);
   const [address, setAddress] = useState(APPLICATION_ADDRESS_INITIAL_VALUES);
   const [formSettings, setFormSettings] = useState(() =>
     normalizeApplicationFormSettings({
@@ -41,6 +45,7 @@ export default function ApplicationFormEmbed() {
   const cityOptions = getCitiesForProvince(address.province);
   const composedAddress = buildApplicationAddress(address);
   const visaTypeOptions = toApplicationVisaOptions(formSettings.visaTypes);
+  const maxBirthdate = getTodayInputDate();
 
   function handleAddressChange(field, value) {
     setAddress((prev) => {
@@ -93,6 +98,11 @@ export default function ApplicationFormEmbed() {
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (!privacyAccepted) {
+      setError("Please scroll through the Privacy Agreement and select I Agree before submitting.");
+      return;
+    }
+
     setSubmitting(true);
     setSuccess(false);
     setError("");
@@ -104,6 +114,8 @@ export default function ApplicationFormEmbed() {
         setSuccess(true);
         formRef.current?.reset();
         setAddress(APPLICATION_ADDRESS_INITIAL_VALUES);
+        setPrivacyAccepted(false);
+        setPrivacyResetKey((prev) => prev + 1);
       } else {
         const err = await res.json().catch(() => ({}));
         setError(err?.error || "Submission failed");
@@ -244,8 +256,8 @@ export default function ApplicationFormEmbed() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Age *</label>
-              <input type="number" name="age" min={1} required className="mt-1 w-full rounded border px-3 py-2" />
+              <label className="block text-sm font-medium text-gray-700">Birthdate *</label>
+              <input type="date" name="birthdate" max={maxBirthdate} required className="mt-1 w-full rounded border px-3 py-2" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Available Time *</label>
@@ -282,7 +294,13 @@ export default function ApplicationFormEmbed() {
             <p className="mt-1 text-xs text-gray-600">{APPLICATION_FILE_NOTE}</p>
           </div>
 
-          <button type="submit" disabled={submitting} className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold px-6 py-2 rounded hover:from-blue-700 hover:to-red-700 disabled:opacity-60">
+          <PrivacyAgreement
+            checked={privacyAccepted}
+            onCheckedChange={setPrivacyAccepted}
+            resetKey={privacyResetKey}
+          />
+
+          <button type="submit" disabled={submitting || !privacyAccepted} className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-red-600 text-white font-bold px-6 py-2 rounded hover:from-blue-700 hover:to-red-700 disabled:opacity-60">
             {submitting ? "Submitting…" : "Submit Application"}
           </button>
         </form>

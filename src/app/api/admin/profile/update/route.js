@@ -5,20 +5,26 @@ import { isAdminRole, isSuperAdminEmail, withEffectiveAdminRole } from '@/lib/ad
 import bcrypt from 'bcryptjs';
 import { validateApplicationStyleEmail } from '@/lib/email-validation';
 import { buildActorSnapshot, safeWriteAuditLog } from '@/lib/audit-log';
+import { validatePassword, validateUsername } from '@/lib/account-validation';
 
 export async function PUT(req) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { name, email, password, currentPassword } = await req.json();
+    const { name, email, password, currentPassword, profileImageUrl } = await req.json();
     const user = withEffectiveAdminRole(await prisma.user.findUnique({ where: { id: session.userId } }));
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const updateData = {};
 
     if (name !== undefined) {
-      updateData.name = name;
+      const usernameError = validateUsername(name);
+      if (usernameError) {
+        return NextResponse.json({ error: usernameError }, { status: 400 });
+      }
+
+      updateData.name = String(name).trim();
     }
 
     if (email !== undefined) {
@@ -29,7 +35,7 @@ export async function PUT(req) {
         return NextResponse.json({ error: 'The super admin email cannot be changed.' }, { status: 403 });
       }
 
-      const normalizedEmail = String(email).trim();
+      const normalizedEmail = String(email).trim().toLowerCase();
       const emailError = validateApplicationStyleEmail(normalizedEmail);
       if (emailError) {
         return NextResponse.json({ error: emailError }, { status: 400 });
@@ -45,12 +51,22 @@ export async function PUT(req) {
 
     // Verify current password if trying to change password
     if (password) {
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        return NextResponse.json({ error: passwordError }, { status: 400 });
+      }
+
       const validPassword = await bcrypt.compare(currentPassword || '', user.password);
       if (!validPassword) {
         return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
       }
 
       updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    if (profileImageUrl !== undefined) {
+      const normalizedProfileImageUrl = String(profileImageUrl || '').trim();
+      updateData.profileImageUrl = normalizedProfileImageUrl || null;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -76,6 +92,7 @@ export async function PUT(req) {
       passwordChanged: Boolean(updateData.password),
       emailChanged: updateData.email !== undefined,
       nameChanged: updateData.name !== undefined,
+      profileImageChanged: updateData.profileImageUrl !== undefined,
     },
     });
 

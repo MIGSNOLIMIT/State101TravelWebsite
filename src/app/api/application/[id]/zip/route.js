@@ -4,6 +4,7 @@ import { getAdminSession } from "@/lib/auth";
 import { canAccessAdminRoles, withEffectiveAdminRole } from "@/lib/admin-role";
 import JSZip from "jszip";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
+import { formatBirthdate, getDisplayAge } from "@/lib/application-age";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -66,7 +67,8 @@ export async function GET(_req, { params }) {
       `Phone: ${entry.phone}`,
       `Address: ${entry.address}`,
       `Visa Type: ${entry.visaType}`,
-      `Age: ${entry.age}`,
+      `Age: ${getDisplayAge(entry)}`,
+      `Birthdate: ${entry.birthdate ? formatBirthdate(entry.birthdate) : "-"}`,
       `Available Time: ${entry.availableTime}`,
       `Available Day: ${entry.availableDay}`,
       `Status: ${entry.status}`,

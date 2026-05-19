@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
@@ -103,6 +103,43 @@ export default function AdminShell({ children, title, userName, role }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [displayName, setDisplayName] = useState(userName || "Admin User");
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/admin/profile", { cache: "no-store" });
+        if (!res.ok) return;
+
+        const profile = await res.json();
+        if (ignore || !profile) return;
+
+        setDisplayName(profile.name || profile.email || "Admin User");
+        setProfileImageUrl(profile.profileImageUrl || "");
+      } catch {}
+    }
+
+    loadProfile();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleProfileUpdated = (event) => {
+      const detail = event.detail || {};
+      if (detail.name) {
+        setDisplayName(detail.name);
+      }
+      setProfileImageUrl(detail.profileImageUrl || "");
+    };
+
+    window.addEventListener("admin-profile-updated", handleProfileUpdated);
+    return () => window.removeEventListener("admin-profile-updated", handleProfileUpdated);
+  }, []);
 
   const visiblePrimaryNav = primaryNav.filter((item) => !item.adminOnly || isAdminRole(role));
   const visibleAccountNav = accountNav.filter((item) => !item.adminOnly || isAdminRole(role));
@@ -126,10 +163,22 @@ export default function AdminShell({ children, title, userName, role }) {
         </div>
 
         <div className="border-b border-white/16 px-3 py-4 text-center md:px-4 md:py-5">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-white text-[#164896] shadow-lg md:h-24 md:w-24">
-            <UserCircle2 size={58} strokeWidth={1.5} />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white text-[#164896] shadow-lg md:h-24 md:w-24">
+            {profileImageUrl ? (
+              <div className="relative h-full w-full">
+                <Image
+                  src={profileImageUrl}
+                  alt={displayName || "Admin User"}
+                  fill
+                  className="object-cover"
+                  sizes="96px"
+                />
+              </div>
+            ) : (
+              <UserCircle2 size={58} strokeWidth={1.5} />
+            )}
           </div>
-          <p className="mt-3 truncate text-sm font-semibold md:text-base">{userName || "Admin User"}</p>
+          <p className="mt-3 truncate text-sm font-semibold md:text-base">{displayName}</p>
           <p className="text-xs uppercase tracking-[0.2em] text-white/70">{getAdminRoleDisplayText(role)}</p>
         </div>
 

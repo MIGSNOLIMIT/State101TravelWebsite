@@ -1,4 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import {
+	birthdateInputToDate,
+	calculateAgeFromBirthdate,
+	normalizeBirthdateInput,
+	validateBirthdate,
+} from "@/lib/application-age";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
 import { normalizeApplicationVisaType } from "@/lib/application-visa";
 
@@ -29,7 +35,8 @@ export function normalizeApplicationFields(fields = {}) {
 		phone: normalizeApplicationPhone(fields.phone),
 		address: String(fields.address || "").trim(),
 		visaType: normalizeApplicationVisaType(fields.visaType),
-		age: Math.max(0, Number.parseInt(fields.age, 10) || 0),
+		birthdate: normalizeBirthdateInput(fields.birthdate),
+		age: calculateAgeFromBirthdate(fields.birthdate),
 		availableTime: String(fields.availableTime || "").trim(),
 		availableDay: String(fields.availableDay || "").trim(),
 	};
@@ -44,9 +51,9 @@ export function validateApplicationFullName(fullName) {
 }
 
 export function validateApplicationFields(fields) {
-	const { fullName, email, phone, address, visaType, availableTime, availableDay } = fields;
+	const { fullName, email, phone, address, visaType, availableTime, availableDay, birthdate } = fields;
 
-	if (!fullName || !email || !phone || !address || !visaType || !availableTime || !availableDay) {
+	if (!fullName || !email || !phone || !address || !visaType || !availableTime || !availableDay || !birthdate) {
 		return "Missing required fields";
 	}
 
@@ -62,6 +69,11 @@ export function validateApplicationFields(fields) {
 
 	if (!APPLICATION_PHONE_REGEX.test(phone)) {
 		return "Invalid phone number";
+	}
+
+	const birthdateError = validateBirthdate(birthdate);
+	if (birthdateError) {
+		return birthdateError;
 	}
 
 	return "";
@@ -112,6 +124,7 @@ export async function createApplicationEntry(fields) {
 			address: fields.address,
 			visaType: fields.visaType,
 			age: fields.age,
+			birthdate: birthdateInputToDate(fields.birthdate),
 			availableTime: fields.availableTime,
 			availableDay: fields.availableDay,
 			status: "NEW",

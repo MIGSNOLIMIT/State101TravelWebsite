@@ -1,13 +1,23 @@
 "use client";
 
-import { Eye, EyeOff, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { Eye, EyeOff, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import AdminShell from "@/app/admin/components/AdminShell";
 import { getAdminRoleBadgeLabel } from "@/lib/admin-role";
+import {
+  generateRandomPassword,
+  PASSWORD_HELPER_TEXT,
+  USERNAME_HELPER_TEXT,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  USERNAME_PATTERN,
+  validatePassword,
+} from "@/lib/account-validation";
 import { validateApplicationStyleEmail } from "@/lib/email-validation";
 
-const initialNewUser = { name: "", email: "", password: "", role: "" };
-const initialEditForm = { name: "", email: "" };
+function createInitialNewUser() {
+  return { name: "", email: "", password: generateRandomPassword(), role: "" };
+}
 
 function roleBadgeClasses(role) {
   return role === "admin"
@@ -20,9 +30,7 @@ export default function UsersClient({ initialUserName, initialRole }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [newUser, setNewUser] = useState(initialNewUser);
-  const [editingUser, setEditingUser] = useState(null);
-  const [editForm, setEditForm] = useState(initialEditForm);
+  const [newUser, setNewUser] = useState(() => createInitialNewUser());
   const [saving, setSaving] = useState(false);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
@@ -62,10 +70,6 @@ export default function UsersClient({ initialUserName, initialRole }) {
     if (res.ok) {
       setUsers((prev) => prev.filter((user) => user.id !== id));
       setMessage("User removed.");
-      if (editingUser?.id === id) {
-        setEditingUser(null);
-        setEditForm(initialEditForm);
-      }
       return;
     }
 
@@ -87,6 +91,18 @@ export default function UsersClient({ initialUserName, initialRole }) {
       return;
     }
 
+    const usernameError = validateUsername(newUser.name);
+    if (usernameError) {
+      setMessage(usernameError);
+      return;
+    }
+
+    const passwordError = validatePassword(newUser.password);
+    if (passwordError) {
+      setMessage(passwordError);
+      return;
+    }
+
     if (!newUser.role) {
       setMessage("Select a role.");
       return;
@@ -94,6 +110,7 @@ export default function UsersClient({ initialUserName, initialRole }) {
 
     setSaving(true);
     try {
+      const temporaryPassword = newUser.password;
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,58 +120,14 @@ export default function UsersClient({ initialUserName, initialRole }) {
       if (res.ok) {
         const created = await res.json();
         setUsers((prev) => [...prev, created]);
-        setNewUser(initialNewUser);
-        setMessage("User created.");
+        setNewUser(createInitialNewUser());
+        setMessage(`User created. Temporary password: ${temporaryPassword}. The user can change or reset it later.`);
       } else {
         const errorJson = await res.json().catch(() => ({}));
         if (errorJson?.error === "Email already exists") {
           setMessage("This Email is already in use.");
         } else {
           setMessage(errorJson?.error || "Error creating user.");
-        }
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const startEditUser = (user) => {
-    setEditingUser(user);
-    setEditForm({ name: user.name || "", email: user.email });
-    setMessage("");
-  };
-
-  const handleEditUser = async (event) => {
-    event.preventDefault();
-    if (!editingUser) return;
-
-    setMessage("");
-    const emailError = validateApplicationStyleEmail(editForm.email);
-    if (emailError) {
-      setMessage(emailError);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const payload = { name: editForm.name, email: editForm.email };
-      const res = await fetch(`/api/admin/users?id=${editingUser.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        setUsers((prev) => prev.map((user) => (user.id === editingUser.id ? { ...user, ...payload } : user)));
-        setEditingUser(null);
-        setEditForm(initialEditForm);
-        setMessage("User updated.");
-      } else {
-        const errorJson = await res.json().catch(() => ({}));
-        if (errorJson?.error === "Email already exists") {
-          setMessage("This Email is already in use.");
-        } else {
-          setMessage(errorJson?.error || "Error updating user.");
         }
       }
     } finally {
@@ -179,26 +152,31 @@ export default function UsersClient({ initialUserName, initialRole }) {
           <form onSubmit={handleCreateUser} className="space-y-6 px-6 py-6">
             <div className="grid gap-5 md:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Name</span>
+                <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Username</span>
                 <input
                   type="text"
                   value={newUser.name}
                   onChange={(event) => setNewUser((prev) => ({ ...prev, name: event.target.value }))}
                   className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                  placeholder="Enter name"
+                  placeholder="Enter username"
+                  required
+                  minLength={USERNAME_MIN_LENGTH}
+                  maxLength={USERNAME_MAX_LENGTH}
+                  pattern={USERNAME_PATTERN}
                 />
+                <p className="mt-2 text-xs text-slate-500">{USERNAME_HELPER_TEXT}</p>
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Password</span>
+                <span className="mb-2 block text-[18px] font-bold leading-none text-[#164896]">Temporary Password</span>
                 <div className="relative">
                   <input
                     type={showNewUserPassword ? "text" : "password"}
                     value={newUser.password}
-                    onChange={(event) => setNewUser((prev) => ({ ...prev, password: event.target.value }))}
                     className="w-full rounded-lg border border-[#aeb9c8] bg-[#f8f8f8] px-4 py-3 pr-12 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                    placeholder="Enter new password"
+                    placeholder="Auto-generated password"
                     required
+                    readOnly
                   />
                   <button
                     type="button"
@@ -207,6 +185,17 @@ export default function UsersClient({ initialUserName, initialRole }) {
                     aria-label={showNewUserPassword ? "Hide password" : "Show password"}
                   >
                     {showNewUserPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs text-slate-500">{PASSWORD_HELPER_TEXT}</p>
+                  <button
+                    type="button"
+                    onClick={() => setNewUser((prev) => ({ ...prev, password: generateRandomPassword() }))}
+                    className="inline-flex items-center gap-2 rounded-md border border-[#cfd7e3] bg-white px-3 py-2 text-xs font-semibold text-[#164896] transition hover:bg-[#eef3fb]"
+                  >
+                    <RefreshCw size={14} />
+                    Generate Another
                   </button>
                 </div>
               </label>
@@ -255,63 +244,11 @@ export default function UsersClient({ initialUserName, initialRole }) {
             Users
           </div>
 
-          {editingUser ? (
-            <form onSubmit={handleEditUser} className="border-b border-[#e2e8f0] bg-[#eef3fb] px-4 py-4">
-              <div className="mb-3 text-center text-sm font-semibold text-[#164896]">Edit User</div>
-              <div className="grid gap-3 lg:grid-cols-[1fr_1.7fr_auto]">
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-semibold text-slate-500">Edit name:</span>
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={(event) => setEditForm((prev) => ({ ...prev, name: event.target.value }))}
-                    className="w-full rounded-md border border-[#aeb9c8] bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                    placeholder="Edit name"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1 block text-[10px] font-semibold text-slate-500">Edit email:</span>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(event) => setEditForm((prev) => ({ ...prev, email: event.target.value }))}
-                    className="w-full rounded-md border border-[#aeb9c8] bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#164896]"
-                    placeholder="Edit email"
-                    required
-                  />
-                </label>
-
-                <div className="flex items-end gap-2">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[#2f7b0b] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#266608] disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <Save size={14} />
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingUser(null);
-                      setEditForm(initialEditForm);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f0b45b] bg-[#fff7ed] px-3 py-2 text-xs font-semibold text-[#b45309] transition hover:bg-[#ffedd5]"
-                  >
-                    <X size={14} />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : null}
-
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-[#1d4f9d] text-white">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Name</th>
+                  <th className="px-4 py-3 font-semibold">Username</th>
                   <th className="px-4 py-3 font-semibold">Email</th>
                   <th className="px-4 py-3 font-semibold">Role</th>
                   <th className="px-4 py-3 font-semibold text-right">Actions</th>
@@ -329,11 +266,10 @@ export default function UsersClient({ initialUserName, initialRole }) {
                 ) : (
                   users.map((user) => {
                     const isAdmin = user.role === "admin";
-                    const isEditing = editingUser?.id === user.id;
                     const canManageThisUser = !isAdmin || isSuperAdminSession;
 
                     return (
-                      <tr key={user.id} className={isEditing ? "bg-[#eef3fb]" : "border-b border-[#e5e7eb] bg-white"}>
+                      <tr key={user.id} className="border-b border-[#e5e7eb] bg-white">
                         <td className="px-4 py-3 font-medium text-slate-800">{user.name || "-"}</td>
                         <td className="px-4 py-3 text-slate-700">{user.email}</td>
                         <td className="px-4 py-3">
@@ -343,18 +279,6 @@ export default function UsersClient({ initialUserName, initialRole }) {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              disabled={!canManageThisUser}
-                              onClick={() => startEditUser(user)}
-                              className={[
-                                "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-white transition",
-                                canManageThisUser ? "bg-[#1d4f9d] hover:bg-[#143f88]" : "cursor-not-allowed bg-[#b8b8b8]",
-                              ].join(" ")}
-                            >
-                              <Pencil size={14} />
-                              Edit
-                            </button>
                             <button
                               type="button"
                               disabled={!canManageThisUser}

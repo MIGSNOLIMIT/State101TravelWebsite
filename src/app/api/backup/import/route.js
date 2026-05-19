@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { createClient } from "@supabase/supabase-js";
 import { buildActorSnapshot, safeWriteAuditLog } from "@/lib/audit-log";
 import { normalizeApplicationStatus } from "@/lib/application-status";
+import { birthdateInputToDate, birthdateDateToInputValue, calculateAgeFromBirthdate } from "@/lib/application-age";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -97,7 +98,8 @@ export async function POST(req) {
             phone: e.phone,
             address: e.address,
             visaType: e.visaType,
-            age: e.age || 0,
+            age: e.birthdate ? calculateAgeFromBirthdate(birthdateDateToInputValue(e.birthdate)) : e.age || 0,
+            birthdate: e.birthdate ? new Date(e.birthdate) : null,
             availableTime: e.availableTime,
             availableDay: e.availableDay,
             status: normalizeApplicationStatus(e.status),
@@ -213,6 +215,7 @@ export async function POST(req) {
         phone: row[idx("phone")] || "",
         address: row[idx("address")] || "",
         visaType: row[idx("visaType")] || "",
+        birthdate: row[idx("birthdate")] || "",
         age: parseInt(row[idx("age")] || "0", 10) || 0,
         availableTime: row[idx("availableTime")] || "",
         availableDay: row[idx("availableDay")] || "",
@@ -233,7 +236,8 @@ export async function POST(req) {
 					phone: data.phone,
 					address: data.address,
 					visaType: data.visaType,
-					age: data.age,
+					age: data.birthdate ? calculateAgeFromBirthdate(data.birthdate) : data.age,
+					birthdate: data.birthdate ? birthdateInputToDate(data.birthdate) : null,
 					availableTime: data.availableTime,
 					availableDay: data.availableDay,
 					status: normalizeApplicationStatus(data.status),
